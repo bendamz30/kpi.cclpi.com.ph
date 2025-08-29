@@ -1,0 +1,14 @@
+[
+  {
+    "targetId": 201,
+    "salesRepId": 101,
+    "year": 2025,
+    "premiumTarget": 12000000.0,
+    "salesCounselorTarget": 165,
+    "policySoldTarget": 1362,
+    "agencyCoopTarget": 12,
+    "createdBy": 1,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  }
+]

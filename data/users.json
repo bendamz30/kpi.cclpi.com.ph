@@ -1,0 +1,22 @@
+[
+  {
+    "userId": 1,
+    "name": "System Admin",
+    "email": "admin@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "Admin",
+    "regionId": null,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "userId": 2,
+    "name": "Viewer User",
+    "email": "viewer@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "Viewer",
+    "regionId": null,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  }
+]

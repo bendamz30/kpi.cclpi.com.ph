@@ -1,0 +1,14 @@
+[
+  {
+    "reportId": 301,
+    "salesRepId": 101,
+    "reportDate": "2025-08-01",
+    "premiumActual": 1200000.0,
+    "salesCounselorActual": 12,
+    "policySoldActual": 100,
+    "agencyCoopActual": 1,
+    "createdBy": 1,
+    "createdAt": "2025-08-01T08:00:00Z",
+    "updatedAt": null
+  }
+]
