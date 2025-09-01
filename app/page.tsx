@@ -33,6 +33,29 @@ export default function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true)
+      try {
+        console.log("[v0] Loading initial dashboard data...")
+        const response = await fetch("/api/dashboard-data")
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[v0] Initial dashboard data loaded:", data)
+          setKpiData(data)
+        } else {
+          console.error("[v0] Failed to load initial data:", response.status, response.statusText)
+        }
+      } catch (error) {
+        console.error("[v0] Error loading initial dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialData()
+  }, [])
+
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser)
   }
@@ -46,6 +69,7 @@ export default function HomePage() {
   const handleFiltersChange = async (filters: any) => {
     setLoading(true)
     try {
+      console.log("[v0] Applying filters:", filters)
       const queryParams = new URLSearchParams()
       if (filters.areaId) queryParams.append("areaId", filters.areaId.toString())
       if (filters.regionId) queryParams.append("regionId", filters.regionId.toString())
@@ -57,10 +81,13 @@ export default function HomePage() {
       const response = await fetch(`/api/dashboard-data?${queryParams}`)
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Filtered dashboard data:", data)
         setKpiData(data)
+      } else {
+        console.error("[v0] Failed to load filtered data:", response.status, response.statusText)
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error)
+      console.error("[v0] Error fetching dashboard data:", error)
     } finally {
       setLoading(false)
     }
