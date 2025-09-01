@@ -75,16 +75,31 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   }, [filters.area, regions])
 
   useEffect(() => {
-    // Filter sales officers by selected region
+    console.log("[v0] Filtering sales officers by region:", filters.region)
+    console.log("[v0] Available sales officers:", salesOfficers)
+
     if (filters.region && filters.region !== "all") {
-      const filtered = salesOfficers.filter((officer) => Number(officer.regionId) === Number(filters.region))
+      const filtered = salesOfficers.filter((officer) => {
+        const officerRegionId = Number(officer.regionId)
+        const selectedRegionId = Number(filters.region)
+        console.log("[v0] Comparing officer regionId:", officerRegionId, "with selected:", selectedRegionId)
+        return officerRegionId === selectedRegionId
+      })
+
+      console.log("[v0] Filtered sales officers:", filtered)
       setFilteredSalesOfficers(filtered)
 
       // Clear sales officer if it's not in the new filtered list
-      if (filters.salesOfficer && !filtered.find((o) => o.userId.toString() === filters.salesOfficer)) {
+      if (
+        filters.salesOfficer &&
+        filters.salesOfficer !== "all" &&
+        !filtered.find((o) => o.userId.toString() === filters.salesOfficer)
+      ) {
+        console.log("[v0] Clearing sales officer selection - not in filtered list")
         setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
       }
     } else {
+      console.log("[v0] No region selected, clearing sales officers")
       setFilteredSalesOfficers([])
       setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
     }
@@ -92,6 +107,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
 
   const fetchDropdownData = async () => {
     try {
+      console.log("[v0] Fetching dropdown data...")
       const [areasRes, regionsRes, salesTypesRes, usersRes] = await Promise.all([
         fetch("/api/areas"),
         fetch("/api/regions"),
@@ -106,12 +122,16 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
         usersRes.json(),
       ])
 
+      const regionalUsers = usersData.filter((user: User) => user.role === "RegionalUser")
+      console.log("[v0] All users:", usersData)
+      console.log("[v0] RegionalUser officers:", regionalUsers)
+
       setAreas(areasData)
       setRegions(regionsData)
       setSalesTypes(salesTypesData)
-      setSalesOfficers(usersData.filter((user: User) => user.role === "RegionalUser"))
+      setSalesOfficers(regionalUsers)
     } catch (error) {
-      console.error("Error fetching dropdown data:", error)
+      console.error("[v0] Error fetching dropdown data:", error)
     }
   }
 
@@ -191,15 +211,29 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               disabled={!filters.region || filters.region === "all"}
             >
               <SelectTrigger>
-                <SelectValue placeholder={filters.region && filters.region !== "all" ? "All" : "Select region first"} />
+                <SelectValue
+                  placeholder={
+                    !filters.region || filters.region === "all"
+                      ? "Select region first"
+                      : filteredSalesOfficers.length === 0
+                        ? "No sales officers"
+                        : "Select sales officer"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {filteredSalesOfficers.map((officer) => (
-                  <SelectItem key={officer.userId} value={officer.userId.toString()}>
-                    {officer.name}
+                {filteredSalesOfficers.length === 0 && filters.region && filters.region !== "all" ? (
+                  <SelectItem value="none" disabled>
+                    No sales officers in this region
                   </SelectItem>
-                ))}
+                ) : (
+                  filteredSalesOfficers.map((officer) => (
+                    <SelectItem key={officer.userId} value={officer.userId.toString()}>
+                      {officer.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
