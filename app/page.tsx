@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">Welcome back, {user.username}! Here's your sales overview.</p>
+              <p className="text-muted-foreground">Welcome back, {user.name}! Here's your sales overview.</p>
             </div>
             <Filters onFiltersChange={handleFiltersChange} />
             <KPICards />

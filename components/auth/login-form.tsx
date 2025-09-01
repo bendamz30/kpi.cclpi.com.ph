@@ -25,8 +25,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     setIsLoading(true)
     setError("")
 
-    // Mock authentication
-    const user = mockUsers.find((u) => u.username === username)
+    const user = mockUsers.find((u) => u.email === username)
 
     if (user && password === "password") {
       const authState = { user, isAuthenticated: true }
@@ -49,10 +48,10 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Email</Label>
               <Input
                 id="username"
-                type="text"
+                type="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -75,9 +74,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
             <p>Demo credentials:</p>
-            <p>admin/password (Admin)</p>
-            <p>viewer/password (Viewer)</p>
-            <p>regional/password (Regional User)</p>
+            <p>admin@example.com/password (Admin)</p>
+            <p>viewer@example.com/password (Viewer)</p>
+            <p>regional@example.com/password (Regional User)</p>
           </div>
         </CardContent>
       </Card>
