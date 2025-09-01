@@ -1,14 +1,23 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { mockSalesReps, mockUsers } from "@/lib/mock-data"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface AddSalesReportFormProps {
   onSuccess: () => void
@@ -18,28 +27,54 @@ interface AddSalesReportFormProps {
 export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormProps) {
   const [formData, setFormData] = useState({
     salesRepId: "",
-    reportDate: "",
+    reportDate: new Date().toISOString().split("T")[0], // Default to today's date
     premiumActual: "",
     salesCounselorActual: "",
     policySoldActual: "",
     agencyCoopActual: "",
   })
+  const [regionalUsers, setRegionalUsers] = useState([]) // Fetch users dynamically
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
 
-  // Get RegionalUser sales reps
-  const regionalUsers = mockUsers.filter((user) => user.role === "RegionalUser")
-  const availableSalesReps = mockSalesReps.filter(
-    (rep) => regionalUsers.some((user) => user.userId === rep.userId) || rep.userId === null,
-  )
+  useEffect(() => {
+    const fetchRegionalUsers = async () => {
+      try {
+        const response = await fetch("/api/users")
+        if (response.ok) {
+          const users = await response.json()
+          const regUsers = users.filter((user) => user.role === "RegionalUser")
+          setRegionalUsers(regUsers)
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error)
+      }
+    }
+    fetchRegionalUsers()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError("")
+    setSuccessMessage("")
+
+    if (
+      !formData.salesRepId ||
+      !formData.reportDate ||
+      !formData.premiumActual ||
+      !formData.salesCounselorActual ||
+      !formData.policySoldActual ||
+      !formData.agencyCoopActual
+    ) {
+      setError("Please complete all fields.")
+      setIsSubmitting(false)
+      return
+    }
 
     try {
-      const response = await fetch("/api/reports", {
+      const response = await fetch("/api/sales-reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,12 +89,26 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
         }),
       })
 
+      const result = await response.json()
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create sales report")
+        throw new Error(result.error || "Failed to create sales report")
       }
 
-      onSuccess()
+      setSuccessMessage(result.message)
+      setFormData({
+        salesRepId: "",
+        reportDate: new Date().toISOString().split("T")[0],
+        premiumActual: "",
+        salesCounselorActual: "",
+        policySoldActual: "",
+        agencyCoopActual: "",
+      })
+
+      // Call onSuccess after a brief delay to show the message
+      setTimeout(() => {
+        onSuccess()
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
@@ -69,7 +118,28 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear messages when user starts typing
+    if (error) setError("")
+    if (successMessage) setSuccessMessage("")
   }
+
+  const ConfirmSubmit = ({ children }) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm Sales Report</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to save this sales report? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSubmit}>{isSubmitting ? "Saving..." : "Save Report"}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
 
   return (
     <Card>
@@ -77,8 +147,13 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
         <CardTitle>Add Sales Report</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>}
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
+          {successMessage && (
+            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
+              {successMessage}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -88,9 +163,9 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
                   <SelectValue placeholder="Select sales rep" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSalesReps.map((rep) => (
-                    <SelectItem key={rep.salesRepId} value={rep.salesRepId.toString()}>
-                      {rep.name}
+                  {regionalUsers.map((user) => (
+                    <SelectItem key={user.userId} value={user.userId.toString()}>
+                      {user.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -166,9 +241,11 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Report"}
-            </Button>
+            <ConfirmSubmit>
+              <Button type="button" disabled={isSubmitting || !formData.salesRepId}>
+                {isSubmitting ? "Saving..." : "Create Report"}
+              </Button>
+            </ConfirmSubmit>
           </div>
         </form>
       </CardContent>
