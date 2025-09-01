@@ -39,16 +39,26 @@ export async function GET(request) {
       const reportDate = new Date(report.reportDate)
       const user = users.find((u) => u.userId === report.salesRepId)
 
+      if (report.reportId === 306) {
+        console.log("[v0] DEBUG Report 306 (Dianne):")
+        console.log("  - Report:", report)
+        console.log("  - Found user:", user)
+        console.log("  - Filter values:", { salesType, area, region, salesOfficer })
+      }
+
       // Date range filter - only apply if dates are provided
       if (startDate && startDate !== "" && reportDate < new Date(startDate)) {
+        if (report.reportId === 306) console.log("  - FILTERED OUT: Start date")
         return false
       }
       if (endDate && endDate !== "" && reportDate > new Date(endDate)) {
+        if (report.reportId === 306) console.log("  - FILTERED OUT: End date")
         return false
       }
 
       // Sales officer filter - only apply if specific officer is selected
       if (salesOfficer && salesOfficer !== "" && salesOfficer !== "All" && user?.name !== salesOfficer) {
+        if (report.reportId === 306) console.log("  - FILTERED OUT: Sales officer", user?.name, "!==", salesOfficer)
         return false
       }
 
@@ -56,6 +66,7 @@ export async function GET(request) {
       if (region && region !== "" && region !== "All") {
         const userRegion = regions.find((r) => r.regionId === user?.regionId)
         if (userRegion?.regionName !== region) {
+          if (report.reportId === 306) console.log("  - FILTERED OUT: Region", userRegion?.regionName, "!==", region)
           return false
         }
       }
@@ -65,6 +76,7 @@ export async function GET(request) {
         const userRegion = regions.find((r) => r.regionId === user?.regionId)
         const userArea = areas.find((a) => a.areaId === userRegion?.areaId)
         if (userArea?.areaName !== area) {
+          if (report.reportId === 306) console.log("  - FILTERED OUT: Area", userArea?.areaName, "!==", area)
           return false
         }
       }
@@ -73,10 +85,13 @@ export async function GET(request) {
       if (salesType && salesType !== "" && salesType !== "All") {
         const userSalesType = salesTypes.find((st) => st.salesTypeId === user?.salesTypeId)
         if (userSalesType?.salesTypeName !== salesType) {
+          if (report.reportId === 306)
+            console.log("  - FILTERED OUT: Sales type", userSalesType?.salesTypeName, "!==", salesType)
           return false
         }
       }
 
+      if (report.reportId === 306) console.log("  - PASSED ALL FILTERS")
       return true
     })
 
