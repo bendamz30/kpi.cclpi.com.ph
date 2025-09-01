@@ -25,6 +25,9 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
     regionId: user.regionId || "",
     salesTypeId: user.salesTypeId || "",
     annualTarget: user.annualTarget || "",
+    salesCounselorTarget: user.salesCounselorTarget || "",
+    policySoldTarget: user.policySoldTarget || "",
+    agencyCoopTarget: user.agencyCoopTarget || "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -38,11 +41,14 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
       const submitData = {
         name: formData.name,
         email: formData.email,
-        passwordHash: formData.passwordHash || user.passwordHash, // Keep existing if not changed
+        passwordHash: formData.passwordHash || user.passwordHash,
         role: formData.role,
         regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
         salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null,
         annualTarget: formData.role === "RegionalUser" ? Number.parseFloat(formData.annualTarget) : null,
+        salesCounselorTarget: formData.role === "RegionalUser" ? Number.parseInt(formData.salesCounselorTarget) : null,
+        policySoldTarget: formData.role === "RegionalUser" ? Number.parseInt(formData.policySoldTarget) : null,
+        agencyCoopTarget: formData.role === "RegionalUser" ? Number.parseInt(formData.agencyCoopTarget) : null,
       }
 
       const response = await fetch(`/api/users/${user.userId}`, {
@@ -174,6 +180,41 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                     value={formData.annualTarget}
                     onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
                     placeholder="e.g., 1000000"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="salesCounselorTarget">Sales Counselor Target</Label>
+                  <Input
+                    id="salesCounselorTarget"
+                    type="number"
+                    value={formData.salesCounselorTarget}
+                    onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
+                    placeholder="e.g., 165"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="policySoldTarget">Policy Sold Target</Label>
+                  <Input
+                    id="policySoldTarget"
+                    type="number"
+                    value={formData.policySoldTarget}
+                    onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
+                    placeholder="e.g., 1362"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="agencyCoopTarget">Agency Coop Target</Label>
+                  <Input
+                    id="agencyCoopTarget"
+                    type="number"
+                    value={formData.agencyCoopTarget}
+                    onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
+                    placeholder="e.g., 12"
                     required
                   />
                 </div>
