@@ -48,33 +48,44 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
     }).format(amount)
   }
 
+  const safeData = {
+    premiumActual: data?.premiumActual || 0,
+    premiumTarget: data?.premiumTarget || 0,
+    salesCounselorActual: data?.salesCounselorActual || 0,
+    salesCounselorTarget: data?.salesCounselorTarget || 0,
+    policySoldActual: data?.policySoldActual || 0,
+    policySoldTarget: data?.policySoldTarget || 0,
+    agencyCoopActual: data?.agencyCoopActual || 0,
+    agencyCoopTarget: data?.agencyCoopTarget || 0,
+  }
+
   const kpiItems = [
     {
       title: "Premium",
-      actual: data.premiumActual,
-      target: data.premiumTarget,
+      actual: safeData.premiumActual,
+      target: safeData.premiumTarget,
       format: formatCurrency,
       color: "bg-blue-500",
     },
     {
       title: "Sales Counselor",
-      actual: data.salesCounselorActual,
-      target: data.salesCounselorTarget,
-      format: (val: number) => val.toString(),
+      actual: safeData.salesCounselorActual,
+      target: safeData.salesCounselorTarget,
+      format: (val: number) => (val ?? 0).toString(),
       color: "bg-emerald-500",
     },
     {
       title: "Policy Sold",
-      actual: data.policySoldActual,
-      target: data.policySoldTarget,
-      format: (val: number) => val.toString(),
+      actual: safeData.policySoldActual,
+      target: safeData.policySoldTarget,
+      format: (val: number) => (val ?? 0).toString(),
       color: "bg-amber-500",
     },
     {
       title: "Agency Coop",
-      actual: data.agencyCoopActual,
-      target: data.agencyCoopTarget,
-      format: (val: number) => val.toString(),
+      actual: safeData.agencyCoopActual,
+      target: safeData.agencyCoopTarget,
+      format: (val: number) => (val ?? 0).toString(),
       color: "bg-purple-500",
     },
   ]
