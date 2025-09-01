@@ -6,12 +6,25 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { SalesRepsTable } from "@/components/dashboard/sales-reps-table"
 import { UsersTable } from "@/components/dashboard/users-table"
+import { DashboardFilters } from "@/components/dashboard/dashboard-filters"
+import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboard-kpi-cards"
 import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
 import type { User } from "@/lib/mock-data"
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [kpiData, setKpiData] = useState<KPIData>({
+    premiumActual: 0,
+    premiumTarget: 0,
+    salesCounselorActual: 0,
+    salesCounselorTarget: 0,
+    policySoldActual: 0,
+    policySoldTarget: 0,
+    agencyCoopActual: 0,
+    agencyCoopTarget: 0,
+  })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const auth = getStoredAuth()
@@ -30,8 +43,27 @@ export default function HomePage() {
     setActiveTab("dashboard")
   }
 
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />
+  const handleFiltersChange = async (filters: any) => {
+    setLoading(true)
+    try {
+      const queryParams = new URLSearchParams()
+      if (filters.areaId) queryParams.append("areaId", filters.areaId.toString())
+      if (filters.regionId) queryParams.append("regionId", filters.regionId.toString())
+      if (filters.salesTypeId) queryParams.append("salesTypeId", filters.salesTypeId.toString())
+      if (filters.salesRepId) queryParams.append("salesRepId", filters.salesRepId.toString())
+      if (filters.startDate) queryParams.append("startDate", filters.startDate)
+      if (filters.endDate) queryParams.append("endDate", filters.endDate)
+
+      const response = await fetch(`/api/dashboard-data?${queryParams}`)
+      if (response.ok) {
+        const data = await response.json()
+        setKpiData(data)
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const renderContent = () => {
@@ -41,8 +73,12 @@ export default function HomePage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">Dashboard content has been cleared.</p>
+              <p className="text-muted-foreground">
+                Monitor sales performance and track key metrics across your organization.
+              </p>
             </div>
+            <DashboardFilters onFiltersChange={handleFiltersChange} />
+            <DashboardKPICards data={kpiData} loading={loading} />
           </div>
         )
       case "sales-reps":
@@ -68,6 +104,10 @@ export default function HomePage() {
       default:
         return null
     }
+  }
+
+  if (!user) {
+    return <LoginForm onLogin={handleLogin} />
   }
 
   return (
