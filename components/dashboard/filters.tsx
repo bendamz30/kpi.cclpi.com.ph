@@ -90,8 +90,8 @@ export function Filters({ onFiltersChange }: FiltersProps) {
               </SelectTrigger>
               <SelectContent>
                 {mockAreas.map((area) => (
-                  <SelectItem key={area.id} value={area.id}>
-                    {area.name}
+                  <SelectItem key={area.areaId.toString()} value={area.areaId.toString()}>
+                    {area.areaName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -106,8 +106,8 @@ export function Filters({ onFiltersChange }: FiltersProps) {
               </SelectTrigger>
               <SelectContent>
                 {mockRegions.map((region) => (
-                  <SelectItem key={region.id} value={region.id}>
-                    {region.name}
+                  <SelectItem key={region.regionId.toString()} value={region.regionId.toString()}>
+                    {region.regionName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -122,8 +122,8 @@ export function Filters({ onFiltersChange }: FiltersProps) {
               </SelectTrigger>
               <SelectContent>
                 {mockSalesTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
+                  <SelectItem key={type.salesTypeId.toString()} value={type.salesTypeId.toString()}>
+                    {type.typeName}
                   </SelectItem>
                 ))}
               </SelectContent>
