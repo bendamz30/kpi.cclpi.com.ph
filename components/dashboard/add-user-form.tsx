@@ -70,19 +70,19 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
   const fetchDropdownData = async () => {
     try {
-      const areasResponse = await fetch("/data/areas.json")
+      const areasResponse = await fetch("/api/areas")
       if (areasResponse.ok) {
         const areasData = await areasResponse.json()
         setAreas(areasData)
       }
 
-      const regionsResponse = await fetch("/data/regions.json")
+      const regionsResponse = await fetch("/api/regions")
       if (regionsResponse.ok) {
         const regionsData = await regionsResponse.json()
         setRegions(regionsData)
       }
 
-      const salesTypesResponse = await fetch("/data/salesTypes.json")
+      const salesTypesResponse = await fetch("/api/sales-types")
       if (salesTypesResponse.ok) {
         const salesTypesData = await salesTypesResponse.json()
         setSalesTypes(salesTypesData)
