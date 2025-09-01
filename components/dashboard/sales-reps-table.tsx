@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Search, FileText } from "lucide-react"
+import { Edit, Trash2, Plus, Search } from "lucide-react"
 import { AddSalesReportForm } from "./add-sales-report-form"
 import { mockSalesReps, mockRegions, mockSalesTypes, mockSalesTargets, mockSalesReports } from "@/lib/mock-data"
 
@@ -63,16 +63,10 @@ export function SalesRepsTable() {
             <CardTitle>Sales Representatives</CardTitle>
             <CardDescription>Manage your sales team and track performance</CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowAddReport(true)} variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Add Sales Report
-            </Button>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Rep
-            </Button>
-          </div>
+          <Button onClick={() => setShowAddReport(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Sales Report
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
