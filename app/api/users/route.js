@@ -5,6 +5,7 @@ import path from "path"
 const dataDir = path.join(process.cwd(), "data")
 const usersFile = path.join(dataDir, "users.json")
 const salesTargetsFile = path.join(dataDir, "salesTargets.json")
+const regionsFile = path.join(dataDir, "regions.json")
 
 // Utility: read JSON file
 function readJson(filePath) {
@@ -76,6 +77,17 @@ export async function POST(request) {
     // Auto-increment userId
     const newUserId = users.length > 0 ? Math.max(...users.map((u) => u.userId)) + 1 : 1
 
+    let areaId = null
+    if (role === "RegionalUser" && regionId) {
+      const regions = readJson(regionsFile)
+      const region = regions.find((r) => r.regionId === regionId)
+      if (region) {
+        areaId = region.areaId
+      } else {
+        console.warn(`[v0] Region not found for regionId: ${regionId}`)
+      }
+    }
+
     // Create user object
     const newUser = {
       userId: newUserId,
@@ -84,6 +96,7 @@ export async function POST(request) {
       passwordHash,
       role,
       regionId: role === "RegionalUser" ? regionId || null : null,
+      areaId: role === "RegionalUser" ? areaId : null,
       salesTypeId: role === "RegionalUser" ? salesTypeId || null : null, // Added salesTypeId to user object
       createdAt: new Date().toISOString(),
       updatedAt: null,
