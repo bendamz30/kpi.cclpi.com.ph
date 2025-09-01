@@ -23,6 +23,9 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
     role: "",
     regionId: "",
     annualTarget: "",
+    salesCounselorTarget: "",
+    policySoldTarget: "",
+    agencyCoopTarget: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -39,6 +42,13 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
         role: formData.role,
         regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
         annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
+        ...(formData.role === "RegionalUser" && {
+          salesCounselorTarget: formData.salesCounselorTarget
+            ? Number.parseInt(formData.salesCounselorTarget)
+            : undefined,
+          policySoldTarget: formData.policySoldTarget ? Number.parseInt(formData.policySoldTarget) : undefined,
+          agencyCoopTarget: formData.agencyCoopTarget ? Number.parseInt(formData.agencyCoopTarget) : undefined,
+        }),
       }
 
       const response = await fetch("/api/users", {
@@ -60,7 +70,6 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
         description: `User ${result.user.name} has been added successfully.`,
       })
 
-      // Reset form
       setFormData({
         name: "",
         email: "",
@@ -68,6 +77,9 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
         role: "",
         regionId: "",
         annualTarget: "",
+        salesCounselorTarget: "",
+        policySoldTarget: "",
+        agencyCoopTarget: "",
       })
 
       onUserAdded()
@@ -149,17 +161,55 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
           </div>
 
           {formData.role === "RegionalUser" && (
-            <div className="space-y-2">
-              <Label htmlFor="annualTarget">Annual Premium Target *</Label>
-              <Input
-                id="annualTarget"
-                type="number"
-                placeholder="500000"
-                value={formData.annualTarget}
-                onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
-                required
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="annualTarget">Annual Premium Target *</Label>
+                <Input
+                  id="annualTarget"
+                  type="number"
+                  placeholder="12000000"
+                  value={formData.annualTarget}
+                  onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="salesCounselorTarget">Sales Counselor Target *</Label>
+                  <Input
+                    id="salesCounselorTarget"
+                    type="number"
+                    placeholder="165"
+                    value={formData.salesCounselorTarget}
+                    onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="policySoldTarget">Policy Sold Target *</Label>
+                  <Input
+                    id="policySoldTarget"
+                    type="number"
+                    placeholder="1362"
+                    value={formData.policySoldTarget}
+                    onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agencyCoopTarget">Agency Coop Target *</Label>
+                  <Input
+                    id="agencyCoopTarget"
+                    type="number"
+                    placeholder="12"
+                    value={formData.agencyCoopTarget}
+                    onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <div className="space-y-2">

@@ -30,7 +30,17 @@ export async function GET() {
 // POST - Add new user
 export async function POST(request) {
   try {
-    const { name, email, passwordHash, role, regionId, annualTarget } = await request.json()
+    const {
+      name,
+      email,
+      passwordHash,
+      role,
+      regionId,
+      annualTarget,
+      salesCounselorTarget,
+      policySoldTarget,
+      agencyCoopTarget,
+    } = await request.json()
 
     if (!name || !email || !passwordHash || !role) {
       return Response.json({ error: "Missing required fields" }, { status: 400 })
@@ -78,9 +88,9 @@ export async function POST(request) {
         salesRepId: newUserId,
         year: new Date().getFullYear(),
         premiumTarget: annualTarget,
-        salesCounselorTarget: 0,
-        policySoldTarget: 0,
-        agencyCoopTarget: 0,
+        salesCounselorTarget: salesCounselorTarget || 0,
+        policySoldTarget: policySoldTarget || 0,
+        agencyCoopTarget: agencyCoopTarget || 0,
         createdBy: 1, // Default system admin
         createdAt: new Date().toISOString(),
         updatedAt: null,
