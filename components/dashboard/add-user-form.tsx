@@ -181,10 +181,10 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="add-user-description">
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="add-user-description">
             Create a new user account with role-based access and regional assignments.
           </DialogDescription>
         </DialogHeader>
@@ -283,8 +283,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
               <div className="space-y-2">
                 <Label htmlFor="salesTypeId">Sales Type</Label>
                 <Select
-                  value={formData.salesTypeId} // Changed from salesType to salesTypeId
-                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })} // Changed from salesType to salesTypeId
+                  value={formData.salesTypeId}
+                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })}
                 >
                   <SelectTrigger aria-label="Select sales type">
                     <SelectValue placeholder="Select sales type" />
