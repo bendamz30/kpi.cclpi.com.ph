@@ -6,37 +6,53 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Search } from "lucide-react"
+import { Edit, Trash2, Plus, Search, FileText } from "lucide-react"
+import { AddSalesReportForm } from "./add-sales-report-form"
 import { mockSalesReps, mockRegions, mockSalesTypes, mockSalesTargets, mockSalesReports } from "@/lib/mock-data"
 
 export function SalesRepsTable() {
   const [searchTerm, setSearchTerm] = useState("")
   const [salesReps] = useState(mockSalesReps)
+  const [showAddReport, setShowAddReport] = useState(false)
 
   const filteredReps = salesReps.filter(
     (rep) =>
       rep.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rep.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      rep.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const getRegionName = (regionId: string) => {
-    return mockRegions.find((r) => r.id === regionId)?.name || "Unknown"
+  const getRegionName = (regionId: number) => {
+    return mockRegions.find((r) => r.regionId === regionId)?.regionName || "Unknown"
   }
 
-  const getSalesTypeName = (salesTypeId: string) => {
-    return mockSalesTypes.find((t) => t.id === salesTypeId)?.name || "Unknown"
+  const getSalesTypeName = (salesTypeId: number) => {
+    return mockSalesTypes.find((t) => t.salesTypeId === salesTypeId)?.typeName || "Unknown"
   }
 
-  const getRepPerformance = (repId: string) => {
+  const getRepPerformance = (repId: number) => {
     const target = mockSalesTargets.find((t) => t.salesRepId === repId)
     const report = mockSalesReports.find((r) => r.salesRepId === repId)
 
     if (!target || !report) return { achievement: 0, status: "No Data" }
 
-    const achievement = (report.actualAmount / target.targetAmount) * 100
+    const achievement = (report.premiumActual / target.premiumTarget) * 100
     const status = achievement >= 100 ? "Exceeded" : achievement >= 80 ? "On Track" : "Below Target"
 
     return { achievement: Math.round(achievement), status }
+  }
+
+  const handleReportSuccess = () => {
+    setShowAddReport(false)
+    // In a real app, you would refresh the data here
+    console.log("[v0] Sales report created successfully")
+  }
+
+  if (showAddReport) {
+    return (
+      <div className="space-y-6">
+        <AddSalesReportForm onSuccess={handleReportSuccess} onCancel={() => setShowAddReport(false)} />
+      </div>
+    )
   }
 
   return (
@@ -47,10 +63,16 @@ export function SalesRepsTable() {
             <CardTitle>Sales Representatives</CardTitle>
             <CardDescription>Manage your sales team and track performance</CardDescription>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Rep
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowAddReport(true)} variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Add Sales Report
+            </Button>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Rep
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -71,7 +93,6 @@ export function SalesRepsTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Region</TableHead>
                 <TableHead>Sales Type</TableHead>
                 <TableHead>Performance</TableHead>
@@ -81,11 +102,10 @@ export function SalesRepsTable() {
             </TableHeader>
             <TableBody>
               {filteredReps.map((rep) => {
-                const performance = getRepPerformance(rep.id)
+                const performance = getRepPerformance(rep.salesRepId)
                 return (
-                  <TableRow key={rep.id}>
+                  <TableRow key={rep.salesRepId}>
                     <TableCell className="font-medium">{rep.name}</TableCell>
-                    <TableCell>{rep.email}</TableCell>
                     <TableCell>{getRegionName(rep.regionId)}</TableCell>
                     <TableCell>{getSalesTypeName(rep.salesTypeId)}</TableCell>
                     <TableCell>{performance.achievement}%</TableCell>
