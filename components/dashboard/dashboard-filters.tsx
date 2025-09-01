@@ -32,6 +32,7 @@ interface User {
   userId: number
   name: string
   regionId: number
+  areaId: number
   role: string
 }
 
@@ -75,39 +76,39 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   }, [filters.area, regions])
 
   useEffect(() => {
-    console.log("[v0] Filtering sales officers by region:", filters.region)
-    console.log("[v0] Available sales officers:", salesOfficers)
+    console.debug("[v0] computeOfficerOptions -> areaId=", filters.area, "regionId=", filters.region)
 
+    let filtered = salesOfficers
+
+    // Filter by Area first if selected
+    if (filters.area && filters.area !== "all") {
+      filtered = filtered.filter((officer) => Number(officer.areaId) === Number(filters.area))
+      console.debug("[v0] After area filter:", filtered.length, "officers")
+    }
+
+    // Then filter by Region if selected
     if (filters.region && filters.region !== "all") {
-      const filtered = salesOfficers.filter((officer) => {
-        const officerRegionId = Number(officer.regionId)
-        const selectedRegionId = Number(filters.region)
-        console.log("[v0] Comparing officer regionId:", officerRegionId, "with selected:", selectedRegionId)
-        return officerRegionId === selectedRegionId
-      })
+      filtered = filtered.filter((officer) => Number(officer.regionId) === Number(filters.region))
+      console.debug("[v0] After region filter:", filtered.length, "officers")
+    }
 
-      console.log("[v0] Filtered sales officers:", filtered)
-      setFilteredSalesOfficers(filtered)
+    console.debug("[v0] computeOfficerOptions -> optionsCount=", filtered.length)
+    setFilteredSalesOfficers(filtered)
 
-      // Clear sales officer if it's not in the new filtered list
-      if (
-        filters.salesOfficer &&
-        filters.salesOfficer !== "all" &&
-        !filtered.find((o) => o.userId.toString() === filters.salesOfficer)
-      ) {
-        console.log("[v0] Clearing sales officer selection - not in filtered list")
-        setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
-      }
-    } else {
-      console.log("[v0] No region selected, clearing sales officers")
-      setFilteredSalesOfficers([])
+    // Clear sales officer selection if current selection is not in filtered list
+    if (
+      filters.salesOfficer &&
+      filters.salesOfficer !== "all" &&
+      !filtered.find((o) => o.userId.toString() === filters.salesOfficer)
+    ) {
+      console.debug("[v0] Clearing sales officer selection - not in filtered list")
       setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
     }
-  }, [filters.region, salesOfficers])
+  }, [filters.area, filters.region, salesOfficers])
 
   const fetchDropdownData = async () => {
     try {
-      console.log("[v0] Fetching dropdown data...")
+      console.debug("[v0] Fetching dropdown data...")
       const [areasRes, regionsRes, salesTypesRes, usersRes] = await Promise.all([
         fetch("/api/areas"),
         fetch("/api/regions"),
@@ -123,8 +124,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       ])
 
       const regionalUsers = usersData.filter((user: User) => user.role === "RegionalUser")
-      console.log("[v0] All users:", usersData)
-      console.log("[v0] RegionalUser officers:", regionalUsers)
+      console.debug(
+        "[v0] loaded counts: users=",
+        usersData.length,
+        ", reports=N/A, targets=N/A, areas=",
+        areasData.length,
+        ", regions=",
+        regionsData.length,
+        ", salesTypes=",
+        salesTypesData.length,
+      )
+      console.debug("[v0] RegionalUser officers:", regionalUsers.length)
 
       setAreas(areasData)
       setRegions(regionsData)
@@ -140,7 +150,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   }
 
   const handleApplyFilter = () => {
-    console.debug("[v0] Applying filters:", filters, " -> results: pending...")
+    console.debug("[v0] applyFilters called with filters:", filters)
     onFiltersChange(filters)
   }
 
@@ -152,7 +162,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Label htmlFor="salesType">Sales Type</Label>
             <Select value={filters.salesType} onValueChange={(value) => handleFilterChange("salesType", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select sales type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -169,7 +179,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Label htmlFor="area">Area</Label>
             <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select area" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -190,7 +200,9 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               disabled={!filters.area || filters.area === "all"}
             >
               <SelectTrigger>
-                <SelectValue placeholder={filters.area && filters.area !== "all" ? "All" : "Select area first"} />
+                <SelectValue
+                  placeholder={filters.area && filters.area !== "all" ? "Select region" : "Select area first"}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
@@ -208,24 +220,18 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Select
               value={filters.salesOfficer}
               onValueChange={(value) => handleFilterChange("salesOfficer", value)}
-              disabled={!filters.region || filters.region === "all"}
+              disabled={filteredSalesOfficers.length === 0}
             >
               <SelectTrigger>
                 <SelectValue
-                  placeholder={
-                    !filters.region || filters.region === "all"
-                      ? "Select region first"
-                      : filteredSalesOfficers.length === 0
-                        ? "No sales officers"
-                        : "Select sales officer"
-                  }
+                  placeholder={filteredSalesOfficers.length === 0 ? "No sales officers" : "Select sales officer"}
                 />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {filteredSalesOfficers.length === 0 && filters.region && filters.region !== "all" ? (
+                {filteredSalesOfficers.length === 0 ? (
                   <SelectItem value="none" disabled>
-                    No sales officers in this region
+                    No sales officers available
                   </SelectItem>
                 ) : (
                   filteredSalesOfficers.map((officer) => (

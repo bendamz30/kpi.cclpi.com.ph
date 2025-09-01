@@ -78,49 +78,77 @@ export default function HomePage() {
   }, [])
 
   const applyFilters = (reports: MergedReport[], filters: FilterCriteria): MergedReport[] => {
-    console.debug("[v0] Applying filters:", filters, " -> input reports:", reports.length)
+    console.debug("[v0] applyFilters called with filters:", filters)
+    console.debug("[v0] Input reports count:", reports.length)
 
     const filteredReports = reports.filter((report) => {
-      // Type-safe numeric comparisons
-      if (filters.areaId && filters.areaId !== "") {
-        if (Number(report.areaId) !== Number(filters.areaId)) return false
+      // Normalize filter values - treat empty string or "all" as null (no filter)
+      const fSalesType =
+        filters.salesTypeId === "" || filters.salesTypeId === "all" ? null : Number(filters.salesTypeId)
+      const fArea = filters.areaId === "" || filters.areaId === "all" ? null : Number(filters.areaId)
+      const fRegion = filters.regionId === "" || filters.regionId === "all" ? null : Number(filters.regionId)
+      const fSalesRep = filters.salesRepId === "" || filters.salesRepId === "all" ? null : Number(filters.salesRepId)
+
+      // Sales Type filtering
+      if (fSalesType !== null) {
+        if (Number(report.salesTypeId) !== fSalesType) {
+          return false
+        }
       }
 
-      if (filters.regionId && filters.regionId !== "") {
-        if (Number(report.regionId) !== Number(filters.regionId)) return false
+      // Area filtering
+      if (fArea !== null) {
+        if (Number(report.areaId) !== fArea) {
+          return false
+        }
       }
 
-      if (filters.salesTypeId && filters.salesTypeId !== "") {
-        if (Number(report.salesTypeId) !== Number(filters.salesTypeId)) return false
+      // Region filtering
+      if (fRegion !== null) {
+        if (Number(report.regionId) !== fRegion) {
+          return false
+        }
       }
 
-      if (filters.salesRepId && filters.salesRepId !== "") {
-        if (Number(report.salesRepId) !== Number(filters.salesRepId)) return false
+      // Sales Rep filtering
+      if (fSalesRep !== null) {
+        if (Number(report.salesRepId) !== fSalesRep) {
+          return false
+        }
       }
 
-      // Date range filtering
+      // Date range filtering (inclusive)
       if (filters.startDate && filters.startDate !== "") {
         const reportDate = new Date(report.reportDate)
         const startDate = new Date(filters.startDate)
-        if (reportDate < startDate) return false
+        if (reportDate < startDate) {
+          return false
+        }
       }
 
       if (filters.endDate && filters.endDate !== "") {
         const reportDate = new Date(report.reportDate)
         const endDate = new Date(filters.endDate)
-        if (reportDate > endDate) return false
+        // Make end date inclusive by setting to end of day
+        endDate.setHours(23, 59, 59, 999)
+        if (reportDate > endDate) {
+          return false
+        }
       }
 
       return true
     })
 
-    console.debug("[v0] Applying filters:", filters, " -> results:", filteredReports.length)
+    console.debug("[v0] Filtered reports count:", filteredReports.length)
     return filteredReports
   }
 
   const aggregateReportsToKPIs = (reports: MergedReport[]): KpiType[] => {
+    console.debug("[v0] Aggregating KPIs from", reports.length, "reports")
+
     const totals = reports.reduce(
       (acc, report) => {
+        // Ensure numeric values with fallback to 0
         acc.premiumActual += Number(report.premiumActual) || 0
         acc.salesCounselorActual += Number(report.salesCounselorActual) || 0
         acc.policySoldActual += Number(report.policySoldActual) || 0
@@ -143,64 +171,75 @@ export default function HomePage() {
       },
     )
 
-    return [
+    const calculateAchievement = (actual: number, target: number): number => {
+      return target > 0 ? Math.round((actual / target) * 100 * 100) / 100 : 0 // Round to 2 decimals
+    }
+
+    const calculateStatus = (achievement: number): string => {
+      if (achievement >= 100) return "success"
+      if (achievement >= 80) return "warning"
+      return "danger"
+    }
+
+    const kpis = [
       {
         key: "premium",
         title: "Premium",
         actual: totals.premiumActual,
         target: totals.premiumTarget,
-        achievement: totals.premiumTarget > 0 ? (totals.premiumActual / totals.premiumTarget) * 100 : 0,
+        achievement: calculateAchievement(totals.premiumActual, totals.premiumTarget),
         variance: totals.premiumActual - totals.premiumTarget,
-        status: totals.premiumActual >= totals.premiumTarget ? "success" : "danger",
+        status: calculateStatus(calculateAchievement(totals.premiumActual, totals.premiumTarget)),
       },
       {
         key: "salesCounselors",
         title: "Sales Counselors",
         actual: totals.salesCounselorActual,
         target: totals.salesCounselorTarget,
-        achievement:
-          totals.salesCounselorTarget > 0 ? (totals.salesCounselorActual / totals.salesCounselorTarget) * 100 : 0,
+        achievement: calculateAchievement(totals.salesCounselorActual, totals.salesCounselorTarget),
         variance: totals.salesCounselorActual - totals.salesCounselorTarget,
-        status: totals.salesCounselorActual >= totals.salesCounselorTarget ? "success" : "danger",
+        status: calculateStatus(calculateAchievement(totals.salesCounselorActual, totals.salesCounselorTarget)),
       },
       {
         key: "policiesSold",
         title: "Policies Sold",
         actual: totals.policySoldActual,
         target: totals.policySoldTarget,
-        achievement: totals.policySoldTarget > 0 ? (totals.policySoldActual / totals.policySoldTarget) * 100 : 0,
+        achievement: calculateAchievement(totals.policySoldActual, totals.policySoldTarget),
         variance: totals.policySoldActual - totals.policySoldTarget,
-        status: totals.policySoldActual >= totals.policySoldTarget ? "success" : "danger",
+        status: calculateStatus(calculateAchievement(totals.policySoldActual, totals.policySoldTarget)),
       },
       {
         key: "agencyCoops",
         title: "Agency Coops",
         actual: totals.agencyCoopActual,
         target: totals.agencyCoopTarget,
-        achievement: totals.agencyCoopTarget > 0 ? (totals.agencyCoopActual / totals.agencyCoopTarget) * 100 : 0,
+        achievement: calculateAchievement(totals.agencyCoopActual, totals.agencyCoopTarget),
         variance: totals.agencyCoopActual - totals.agencyCoopTarget,
-        status: totals.agencyCoopActual >= totals.agencyCoopTarget ? "success" : "danger",
+        status: calculateStatus(calculateAchievement(totals.agencyCoopActual, totals.agencyCoopTarget)),
       },
     ]
+
+    console.debug("[v0] KPIs computed:", kpis)
+    return kpis
   }
 
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true)
       try {
-        console.log("[v0] Loading initial dashboard data...")
+        console.debug("[v0] Loading initial dashboard data...")
 
-        // Try to load merged reports first, fallback to merging on frontend
         let reports: MergedReport[] = []
 
         try {
           const mergedResponse = await fetch("/api/merged-reports")
           if (mergedResponse.ok) {
             reports = await mergedResponse.json()
-            console.log("[v0] Loaded merged reports:", reports.length)
+            console.debug("[v0] Loaded merged reports:", reports.length)
           }
         } catch (error) {
-          console.log("[v0] No merged reports found, merging on frontend...")
+          console.debug("[v0] No merged reports found, merging on frontend...")
         }
 
         // If no merged reports, merge on frontend
@@ -223,10 +262,27 @@ export default function HomePage() {
             salesTypesRes.json(),
           ])
 
-          // Merge data on frontend
+          console.debug(
+            "[v0] Loaded counts: users=",
+            users.length,
+            ", reports=",
+            salesReports.length,
+            ", targets=",
+            targets.length,
+            ", areas=",
+            areas.length,
+            ", regions=",
+            regions.length,
+            ", salesTypes=",
+            salesTypes.length,
+          )
+
           reports = salesReports.map((report: any) => {
             const user = users.find((u: any) => Number(u.userId) === Number(report.salesRepId))
-            const target = targets.find((t: any) => Number(t.salesRepId) === Number(report.salesRepId))
+            const reportYear = new Date(report.reportDate).getFullYear()
+            const target = targets.find(
+              (t: any) => Number(t.salesRepId) === Number(report.salesRepId) && Number(t.year) === reportYear,
+            )
             const area = areas.find((a: any) => Number(a.areaId) === Number(user?.areaId))
             const region = regions.find((r: any) => Number(r.regionId) === Number(user?.regionId))
             const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user?.salesTypeId))
@@ -250,7 +306,7 @@ export default function HomePage() {
 
         setMergedReports(reports)
 
-        // Apply initial filters (none) and compute KPIs
+        // Apply initial filters (show all data) and compute KPIs
         const filteredReports = applyFilters(reports, {})
         const kpisArray = aggregateReportsToKPIs(filteredReports)
         setKpis(kpisArray)
@@ -258,7 +314,7 @@ export default function HomePage() {
         const convertedData = convertKpisToKpiData(kpisArray)
         setKpiData(convertedData)
 
-        console.log("[v0] Initial data loaded successfully")
+        console.debug("[v0] Initial data loaded successfully")
       } catch (error) {
         console.error("[v0] Error loading initial dashboard data:", error)
       } finally {
@@ -342,14 +398,13 @@ export default function HomePage() {
   const handleFiltersChange = async (filters: any) => {
     setLoading(true)
     try {
-      console.log("[v0] Applying filters:", filters)
+      console.debug("[v0] Applying filters:", filters)
 
-      // Convert filter format to match our FilterCriteria interface
       const filterCriteria: FilterCriteria = {
-        salesTypeId: filters.salesType || "",
-        areaId: filters.area || "",
-        regionId: filters.region || "",
-        salesRepId: filters.salesOfficer || "",
+        salesTypeId: filters.salesType === "all" ? "" : filters.salesType || "",
+        areaId: filters.area === "all" ? "" : filters.area || "",
+        regionId: filters.region === "all" ? "" : filters.region || "",
+        salesRepId: filters.salesOfficer === "all" ? "" : filters.salesOfficer || "",
         startDate: filters.startDate || "",
         endDate: filters.endDate || "",
         granularity: filters.granularity || "monthly",
