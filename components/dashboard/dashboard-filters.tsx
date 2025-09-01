@@ -34,6 +34,7 @@ interface User {
   regionId: number
   areaId: number
   role: string
+  salesTypeId: number
 }
 
 export function DashboardFilters({ onFiltersChange }: FilterProps) {
@@ -76,11 +77,23 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   }, [filters.area, regions])
 
   useEffect(() => {
-    console.debug("[v0] computeOfficerOptions -> areaId=", filters.area, "regionId=", filters.region)
+    console.debug(
+      "[v0] computeOfficerOptions -> areaId=",
+      filters.area,
+      "regionId=",
+      filters.region,
+      "salesType=",
+      filters.salesType,
+    )
 
     let filtered = salesOfficers
 
-    // Filter by Area first if selected
+    if (filters.salesType && filters.salesType !== "all") {
+      filtered = filtered.filter((officer) => Number(officer.salesTypeId) === Number(filters.salesType))
+      console.debug("[v0] After sales type filter:", filtered.length, "officers")
+    }
+
+    // Filter by Area if selected
     if (filters.area && filters.area !== "all") {
       filtered = filtered.filter((officer) => Number(officer.areaId) === Number(filters.area))
       console.debug("[v0] After area filter:", filtered.length, "officers")
@@ -104,7 +117,11 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       console.debug("[v0] Clearing sales officer selection - not in filtered list")
       setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
     }
-  }, [filters.area, filters.region, salesOfficers])
+  }, [filters.area, filters.region, filters.salesType, salesOfficers])
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
+  }, [filters.salesType])
 
   const fetchDropdownData = async () => {
     try {
