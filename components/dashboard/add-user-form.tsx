@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 
 interface Area {
@@ -20,11 +20,6 @@ interface Region {
   areaId: number
 }
 
-interface SalesType {
-  salesTypeId: number
-  typeName: string
-}
-
 interface AddUserModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -35,22 +30,23 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    passwordHash: "",
+    password: "", // Changed from passwordHash to password for clarity
     role: "",
     areaId: "",
-    regionId: "", // Changed from region to regionId
-    salesTypeId: "",
+    regionId: "",
+    salesType: "", // Changed to salesType string instead of salesTypeId
     annualTarget: "",
     salesCounselorTarget: "",
     policySoldTarget: "",
     agencyCoopTarget: "",
   })
   const [areas, setAreas] = useState<Area[]>([])
-  const [regions, setRegions] = useState<Region[]>([]) // Added regions state
-  const [filteredRegions, setFilteredRegions] = useState<Region[]>([]) // Added filtered regions state
-  const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
+  const [regions, setRegions] = useState<Region[]>([])
+  const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+
+  const salesTypeOptions = ["Life Plan", "Memorial Plan", "Insurance"]
 
   useEffect(() => {
     if (open) {
@@ -81,12 +77,6 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         const regionsData = await regionsResponse.json()
         setRegions(regionsData)
       }
-
-      const salesTypesResponse = await fetch("/api/sales-types")
-      if (salesTypesResponse.ok) {
-        const salesTypesData = await salesTypesResponse.json()
-        setSalesTypes(salesTypesData)
-      }
     } catch (error) {
       console.error("Failed to fetch dropdown data:", error)
     }
@@ -100,13 +90,14 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       const payload = {
         name: formData.name,
         email: formData.email,
-        passwordHash: formData.passwordHash || "PLEASE_REPLACE_WITH_HASH",
-        role: formData.role,
+        passwordHash: formData.password || "PLEASE_REPLACE_WITH_HASH", // Map password to passwordHash for API
+        role: formData.role === "admin" ? "SystemAdmin" : formData.role === "regionalUser" ? "RegionalUser" : "Viewer", // Map role values
         areaId: formData.areaId ? Number.parseInt(formData.areaId) : null,
-        regionId: formData.regionId ? Number.parseInt(formData.regionId) : null, // Changed from region to regionId
-        salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null,
+        regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
+        salesType: formData.salesType, // Send salesType as string
         annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
-        ...(formData.role === "RegionalUser" && {
+        ...(formData.role === "regionalUser" && {
+          // Check for regionalUser instead of RegionalUser
           salesCounselorTarget: formData.salesCounselorTarget
             ? Number.parseInt(formData.salesCounselorTarget)
             : undefined,
@@ -137,11 +128,11 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       setFormData({
         name: "",
         email: "",
-        passwordHash: "",
+        password: "",
         role: "",
         areaId: "",
-        regionId: "", // Changed from region to regionId
-        salesTypeId: "",
+        regionId: "",
+        salesType: "",
         annualTarget: "",
         salesCounselorTarget: "",
         policySoldTarget: "",
@@ -165,11 +156,11 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     setFormData({
       name: "",
       email: "",
-      passwordHash: "",
+      password: "",
       role: "",
       areaId: "",
-      regionId: "", // Changed from region to regionId
-      salesTypeId: "",
+      regionId: "",
+      salesType: "",
       annualTarget: "",
       salesCounselorTarget: "",
       policySoldTarget: "",
@@ -180,19 +171,23 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="add-user-description">
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
+          <DialogDescription id="add-user-description">
+            Create a new user account with role-based access and regional assignments.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">User Info</h3>
+            <h3 className="text-lg font-medium">User Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
                 <Input
                   id="name"
+                  aria-label="User full name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -203,6 +198,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                 <Input
                   id="email"
                   type="email"
+                  aria-label="User email address"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -211,25 +207,26 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="passwordHash">Password</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input
-                  id="passwordHash"
+                  id="password"
                   type="password"
+                  aria-label="User password"
                   placeholder="Leave empty for default"
-                  value={formData.passwordHash}
-                  onChange={(e) => setFormData({ ...formData, passwordHash: e.target.value })}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role *</Label>
                 <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select user role">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SystemAdmin">System Admin</SelectItem>
-                    <SelectItem value="RegionalUser">Regional User</SelectItem>
-                    <SelectItem value="Viewer">Viewer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="regionalUser">Regional User</SelectItem>
+                    <SelectItem value="salesUser">Sales User</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -242,7 +239,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
               <div className="space-y-2">
                 <Label htmlFor="areaId">Area</Label>
                 <Select value={formData.areaId} onValueChange={(value) => setFormData({ ...formData, areaId: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select area">
                     <SelectValue placeholder="Select area" />
                   </SelectTrigger>
                   <SelectContent>
@@ -261,8 +258,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                   onValueChange={(value) => setFormData({ ...formData, regionId: value })}
                   disabled={!formData.areaId}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Region" />
+                  <SelectTrigger aria-label="Select region">
+                    <SelectValue placeholder={!formData.areaId ? "Select area first" : "Select region"} />
                   </SelectTrigger>
                   <SelectContent>
                     {filteredRegions.map((region) => (
@@ -274,18 +271,18 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salesTypeId">Sales Type</Label>
+                <Label htmlFor="salesType">Sales Type</Label>
                 <Select
-                  value={formData.salesTypeId}
-                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })}
+                  value={formData.salesType}
+                  onValueChange={(value) => setFormData({ ...formData, salesType: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select sales type">
                     <SelectValue placeholder="Select sales type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {salesTypes.map((type) => (
-                      <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
-                        {type.typeName}
+                    {salesTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -294,15 +291,16 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
           </div>
 
-          {formData.role === "RegionalUser" && (
+          {formData.role === "regionalUser" && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Targets</h3>
+              <h3 className="text-lg font-medium">Sales Targets</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="annualTarget">Annual Premium Target *</Label>
                   <Input
                     id="annualTarget"
                     type="number"
+                    aria-label="Annual premium target amount"
                     placeholder="12000000"
                     value={formData.annualTarget}
                     onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
@@ -315,6 +313,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     <Input
                       id="salesCounselorTarget"
                       type="number"
+                      aria-label="Sales counselor target count"
                       placeholder="165"
                       value={formData.salesCounselorTarget}
                       onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
@@ -326,6 +325,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     <Input
                       id="policySoldTarget"
                       type="number"
+                      aria-label="Policy sold target count"
                       placeholder="1362"
                       value={formData.policySoldTarget}
                       onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
@@ -337,6 +337,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     <Input
                       id="agencyCoopTarget"
                       type="number"
+                      aria-label="Agency cooperation target count"
                       placeholder="12"
                       value={formData.agencyCoopTarget}
                       onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
@@ -348,12 +349,12 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save User"}
+              {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </div>
         </form>
