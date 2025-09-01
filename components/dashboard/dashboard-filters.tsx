@@ -93,9 +93,11 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       console.debug("[v0] After sales type filter:", filtered.length, "officers")
     }
 
-    // Filter by Area if selected
     if (filters.area && filters.area !== "all") {
-      filtered = filtered.filter((officer) => Number(officer.areaId) === Number(filters.area))
+      filtered = filtered.filter((officer) => {
+        const officerRegion = regions.find((region) => Number(region.regionId) === Number(officer.regionId))
+        return officerRegion && Number(officerRegion.areaId) === Number(filters.area)
+      })
       console.debug("[v0] After area filter:", filtered.length, "officers")
     }
 
