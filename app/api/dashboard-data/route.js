@@ -12,51 +12,116 @@ export async function GET(request) {
     const endDate = searchParams.get("endDate")
     const granularity = searchParams.get("granularity") || "monthly"
 
+    console.log("[v0] Dashboard filters:", { salesType, area, region, salesOfficer, startDate, endDate })
+
     // Read data files
-    const [reportsData, targetsData, usersData] = await Promise.all([
+    const [reportsData, targetsData, usersData, regionsData, areasData] = await Promise.all([
       fs.readFile(path.join(process.cwd(), "data/salesReports.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/salesTargets.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/users.json"), "utf8"),
+      fs.readFile(path.join(process.cwd(), "data/regions.json"), "utf8"),
+      fs.readFile(path.join(process.cwd(), "data/areas.json"), "utf8"),
     ])
 
     const reports = JSON.parse(reportsData)
     const targets = JSON.parse(targetsData)
     const users = JSON.parse(usersData)
+    const regions = JSON.parse(regionsData)
+    const areas = JSON.parse(areasData)
+
+    console.log("[v0] Total reports:", reports.length)
+    console.log("[v0] Total users:", users.length)
 
     // Filter reports based on criteria
     const filteredReports = reports.filter((report) => {
       const reportDate = new Date(report.reportDate)
       const user = users.find((u) => u.userId === report.salesRepId)
 
+      console.log("[v0] Checking report:", report.reportId, "for user:", user?.name)
+
       // Date range filter
-      if (startDate && reportDate < new Date(startDate)) return false
-      if (endDate && reportDate > new Date(endDate)) return false
+      if (startDate && reportDate < new Date(startDate)) {
+        console.log("[v0] Filtered out by start date")
+        return false
+      }
+      if (endDate && reportDate > new Date(endDate)) {
+        console.log("[v0] Filtered out by end date")
+        return false
+      }
 
-      // Sales officer filter
-      if (salesOfficer && report.salesRepId !== Number.parseInt(salesOfficer)) return false
+      // Sales officer filter - match by name instead of ID
+      if (salesOfficer && user?.name !== salesOfficer) {
+        console.log("[v0] Filtered out by sales officer:", user?.name, "vs", salesOfficer)
+        return false
+      }
 
-      // Region filter (through user)
-      if (region && user?.regionId !== Number.parseInt(region)) return false
+      // Region filter - match by name instead of ID
+      if (region) {
+        const userRegion = regions.find((r) => r.regionId === user?.regionId)
+        if (userRegion?.regionName !== region) {
+          console.log("[v0] Filtered out by region:", userRegion?.regionName, "vs", region)
+          return false
+        }
+      }
 
-      // Area filter (through user - would need to join with regions)
-      // Sales type filter (through user)
-      if (salesType && user?.salesTypeId !== Number.parseInt(salesType)) return false
+      // Area filter - match by name through region
+      if (area) {
+        const userRegion = regions.find((r) => r.regionId === user?.regionId)
+        const userArea = areas.find((a) => a.areaId === userRegion?.areaId)
+        if (userArea?.areaName !== area) {
+          console.log("[v0] Filtered out by area:", userArea?.areaName, "vs", area)
+          return false
+        }
+      }
 
+      // Sales type filter - match by name instead of ID
+      if (salesType) {
+        const salesTypes = [
+          { salesTypeId: 1, salesTypeName: "Traditional" },
+          { salesTypeId: 2, salesTypeName: "Hybrid" },
+        ]
+        const userSalesType = salesTypes.find((st) => st.salesTypeId === user?.salesTypeId)
+        if (userSalesType?.salesTypeName !== salesType) {
+          console.log("[v0] Filtered out by sales type:", userSalesType?.salesTypeName, "vs", salesType)
+          return false
+        }
+      }
+
+      console.log("[v0] Report passed all filters")
       return true
     })
+
+    console.log("[v0] Filtered reports count:", filteredReports.length)
 
     // Filter targets based on same criteria
     const filteredTargets = targets.filter((target) => {
       const user = users.find((u) => u.userId === target.salesRepId)
 
-      // Sales officer filter
-      if (salesOfficer && target.salesRepId !== Number.parseInt(salesOfficer)) return false
+      // Sales officer filter - match by name
+      if (salesOfficer && user?.name !== salesOfficer) return false
 
-      // Region filter
-      if (region && user?.regionId !== Number.parseInt(region)) return false
+      // Region filter - match by name
+      if (region) {
+        const userRegion = regions.find((r) => r.regionId === user?.regionId)
+        if (userRegion?.regionName !== region) return false
+      }
 
-      // Sales type filter
-      if (salesType && user?.salesTypeId !== Number.parseInt(salesType)) return false
+      // Area filter - match by name through region
+      if (area) {
+        const userRegion = regions.find((r) => r.regionId === user?.regionId)
+        const userArea = areas.find((a) => a.areaId === userRegion?.areaId)
+        if (userArea?.areaName !== area) return false
+      }
+
+      // Sales type filter - match by name
+      if (salesType) {
+        const salesTypes = [
+          { salesTypeId: 1, salesTypeName: "Traditional" },
+          { salesTypeId: 2, salesTypeName: "Hybrid" },
+        ]
+        const userSalesType = salesTypes.find((st) => st.salesTypeId === user?.salesTypeId)
+        if (userSalesType?.salesTypeName !== salesType) return false
+      }
 
       return true
     })
