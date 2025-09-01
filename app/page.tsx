@@ -194,7 +194,7 @@ export default function HomePage() {
         let reports: MergedReport[] = []
 
         try {
-          const mergedResponse = await fetch("/data/mergedReports.json")
+          const mergedResponse = await fetch("/api/merged-reports")
           if (mergedResponse.ok) {
             reports = await mergedResponse.json()
             console.log("[v0] Loaded merged reports:", reports.length)
@@ -206,12 +206,12 @@ export default function HomePage() {
         // If no merged reports, merge on frontend
         if (reports.length === 0) {
           const [salesReportsRes, usersRes, targetsRes, areasRes, regionsRes, salesTypesRes] = await Promise.all([
-            fetch("/data/salesReports.json"),
-            fetch("/data/users.json"),
-            fetch("/data/salesTargets.json"),
-            fetch("/data/areas.json"),
-            fetch("/data/regions.json"),
-            fetch("/data/salesTypes.json"),
+            fetch("/api/sales-reports-data"),
+            fetch("/api/users"),
+            fetch("/api/sales-targets"),
+            fetch("/api/areas"),
+            fetch("/api/regions"),
+            fetch("/api/sales-types"),
           ])
 
           const [salesReports, users, targets, areas, regions, salesTypes] = await Promise.all([
