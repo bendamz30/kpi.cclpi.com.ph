@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, Plus, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { AddUserForm } from "./add-user-form"
+import { EditUserForm } from "./edit-user-form"
 import { regions } from "@/lib/mock-data"
 
 interface User {
@@ -25,6 +27,8 @@ export function UsersTable() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
 
   const fetchUsers = async () => {
     try {
@@ -47,6 +51,17 @@ export function UsersTable() {
   const handleUserAdded = () => {
     fetchUsers()
     setShowAddForm(false)
+  }
+
+  const handleUserEdited = () => {
+    fetchUsers()
+    setShowEditDialog(false)
+    setEditingUser(null)
+  }
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setShowEditDialog(true)
   }
 
   const filteredUsers = users.filter(
@@ -136,7 +151,7 @@ export function UsersTable() {
                   <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm">
@@ -159,6 +174,17 @@ export function UsersTable() {
       </Card>
 
       {showAddForm && <AddUserForm onUserAdded={handleUserAdded} />}
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <EditUserForm user={editingUser} onSuccess={handleUserEdited} onCancel={() => setShowEditDialog(false)} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
