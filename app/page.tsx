@@ -81,7 +81,18 @@ export default function HomePage() {
     console.debug("[v0] applyFilters called with filters:", filters)
     console.debug("[v0] Input reports count:", reports.length)
 
+    const dianneReport = reports.find((r) => r.salesRepId === 105)
+    if (dianneReport) {
+      console.debug("[v0] Found Dianne's report:", dianneReport)
+    } else {
+      console.debug("[v0] Dianne's report (salesRepId: 105) not found in reports")
+    }
+
     const filteredReports = reports.filter((report) => {
+      if (report.salesRepId === 105) {
+        console.debug("[v0] Checking Dianne's report against filters...")
+      }
+
       // Normalize filter values - treat empty string or "all" as null (no filter)
       const fSalesType =
         filters.salesTypeId === "" || filters.salesTypeId === "all" ? null : Number(filters.salesTypeId)
@@ -92,6 +103,12 @@ export default function HomePage() {
       // Sales Type filtering
       if (fSalesType !== null) {
         if (Number(report.salesTypeId) !== fSalesType) {
+          if (report.salesRepId === 105) {
+            console.debug("[v0] Dianne filtered out by sales type:", {
+              reportSalesTypeId: report.salesTypeId,
+              filterSalesTypeId: fSalesType,
+            })
+          }
           return false
         }
       }
@@ -99,6 +116,12 @@ export default function HomePage() {
       // Area filtering
       if (fArea !== null) {
         if (Number(report.areaId) !== fArea) {
+          if (report.salesRepId === 105) {
+            console.debug("[v0] Dianne filtered out by area:", {
+              reportAreaId: report.areaId,
+              filterAreaId: fArea,
+            })
+          }
           return false
         }
       }
@@ -106,6 +129,12 @@ export default function HomePage() {
       // Region filtering
       if (fRegion !== null) {
         if (Number(report.regionId) !== fRegion) {
+          if (report.salesRepId === 105) {
+            console.debug("[v0] Dianne filtered out by region:", {
+              reportRegionId: report.regionId,
+              filterRegionId: fRegion,
+            })
+          }
           return false
         }
       }
@@ -113,11 +142,21 @@ export default function HomePage() {
       // Sales Rep filtering
       if (fSalesRep !== null) {
         if (Number(report.salesRepId) !== fSalesRep) {
+          if (report.salesRepId === 105) {
+            console.debug("[v0] Dianne filtered out by sales rep:", {
+              reportSalesRepId: report.salesRepId,
+              filterSalesRepId: fSalesRep,
+            })
+          }
           return false
         }
       }
 
-      // Date range filtering (inclusive)
+      if (report.salesRepId === 105) {
+        console.debug("[v0] Dianne's report passed all filters!")
+      }
+
+      // ... existing date filtering code ...
       if (filters.startDate && filters.startDate !== "") {
         const reportDate = new Date(report.reportDate)
         const startDate = new Date(filters.startDate)
@@ -140,6 +179,13 @@ export default function HomePage() {
     })
 
     console.debug("[v0] Filtered reports count:", filteredReports.length)
+    const dianneInFiltered = filteredReports.find((r) => r.salesRepId === 105)
+    if (dianneInFiltered) {
+      console.debug("[v0] Dianne's report included in filtered results")
+    } else {
+      console.debug("[v0] Dianne's report NOT included in filtered results")
+    }
+
     return filteredReports
   }
 
