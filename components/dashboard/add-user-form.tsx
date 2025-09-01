@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { regions } from "@/lib/mock-data"
+import { regions, salesTypes } from "@/lib/mock-data"
 
 interface AddUserFormProps {
   onUserAdded: () => void
@@ -22,6 +22,7 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
     passwordHash: "",
     role: "",
     regionId: "",
+    salesTypeId: "",
     annualTarget: "",
     salesCounselorTarget: "",
     policySoldTarget: "",
@@ -41,6 +42,7 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
         passwordHash: formData.passwordHash || "PLEASE_REPLACE_WITH_HASH",
         role: formData.role,
         regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
+        salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null,
         annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
         ...(formData.role === "RegionalUser" && {
           salesCounselorTarget: formData.salesCounselorTarget
@@ -76,6 +78,7 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
         passwordHash: "",
         role: "",
         regionId: "",
+        salesTypeId: "",
         annualTarget: "",
         salesCounselorTarget: "",
         policySoldTarget: "",
@@ -162,6 +165,25 @@ export function AddUserForm({ onUserAdded }: AddUserFormProps) {
 
           {formData.role === "RegionalUser" && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="salesTypeId">Sales Type *</Label>
+                <Select
+                  value={formData.salesTypeId}
+                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sales type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {salesTypes.map((type) => (
+                      <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
+                        {type.typeName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="annualTarget">Annual Premium Target *</Label>
                 <Input

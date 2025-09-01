@@ -36,6 +36,7 @@ export async function POST(request) {
       passwordHash,
       role,
       regionId,
+      salesTypeId, // Added salesTypeId parameter
       annualTarget,
       salesCounselorTarget,
       policySoldTarget,
@@ -65,6 +66,7 @@ export async function POST(request) {
       passwordHash,
       role,
       regionId: role === "RegionalUser" ? regionId || null : null,
+      salesTypeId: role === "RegionalUser" ? salesTypeId || null : null, // Added salesTypeId to user object
       createdAt: new Date().toISOString(),
       updatedAt: null,
     }

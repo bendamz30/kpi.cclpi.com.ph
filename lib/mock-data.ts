@@ -238,3 +238,4 @@ export function calculatePercentage(actual: number, target: number): number {
 
 export const users = mockUsers
 export const regions = mockRegions
+export const salesTypes = mockSalesTypes
