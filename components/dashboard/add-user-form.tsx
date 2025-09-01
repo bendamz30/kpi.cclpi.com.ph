@@ -181,10 +181,10 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="add-user-description">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
-          <DialogDescription id="add-user-description">
+          <DialogDescription>
             Create a new user account with role-based access and regional assignments.
           </DialogDescription>
         </DialogHeader>
