@@ -15,12 +15,13 @@ export async function GET(request) {
     console.log("[v0] Dashboard filters:", { salesType, area, region, salesOfficer, startDate, endDate })
 
     // Read data files
-    const [reportsData, targetsData, usersData, regionsData, areasData] = await Promise.all([
+    const [reportsData, targetsData, usersData, regionsData, areasData, salesTypesData] = await Promise.all([
       fs.readFile(path.join(process.cwd(), "data/salesReports.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/salesTargets.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/users.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/regions.json"), "utf8"),
       fs.readFile(path.join(process.cwd(), "data/areas.json"), "utf8"),
+      fs.readFile(path.join(process.cwd(), "data/salesTypes.json"), "utf8"),
     ])
 
     const reports = JSON.parse(reportsData)
@@ -28,103 +29,103 @@ export async function GET(request) {
     const users = JSON.parse(usersData)
     const regions = JSON.parse(regionsData)
     const areas = JSON.parse(areasData)
+    const salesTypes = JSON.parse(salesTypesData)
 
-    console.log("[v0] Total reports:", reports.length)
-    console.log("[v0] Total users:", users.length)
+    console.log("[v0] Loaded data - Reports:", reports.length, "Targets:", targets.length, "Users:", users.length)
+    console.log("[v0] Sample report:", reports[0])
+    console.log("[v0] Sample target:", targets[0])
 
-    // Filter reports based on criteria
     const filteredReports = reports.filter((report) => {
       const reportDate = new Date(report.reportDate)
       const user = users.find((u) => u.userId === report.salesRepId)
 
-      console.log("[v0] Checking report:", report.reportId, "for user:", user?.name)
-
-      // Date range filter
-      if (startDate && reportDate < new Date(startDate)) {
-        console.log("[v0] Filtered out by start date")
+      // Date range filter - only apply if dates are provided
+      if (startDate && startDate !== "" && reportDate < new Date(startDate)) {
         return false
       }
-      if (endDate && reportDate > new Date(endDate)) {
-        console.log("[v0] Filtered out by end date")
+      if (endDate && endDate !== "" && reportDate > new Date(endDate)) {
         return false
       }
 
-      // Sales officer filter - match by name instead of ID
-      if (salesOfficer && user?.name !== salesOfficer) {
-        console.log("[v0] Filtered out by sales officer:", user?.name, "vs", salesOfficer)
+      // Sales officer filter - only apply if specific officer is selected
+      if (salesOfficer && salesOfficer !== "" && salesOfficer !== "All" && user?.name !== salesOfficer) {
         return false
       }
 
-      // Region filter - match by name instead of ID
-      if (region) {
+      // Region filter - only apply if specific region is selected
+      if (region && region !== "" && region !== "All") {
         const userRegion = regions.find((r) => r.regionId === user?.regionId)
         if (userRegion?.regionName !== region) {
-          console.log("[v0] Filtered out by region:", userRegion?.regionName, "vs", region)
           return false
         }
       }
 
-      // Area filter - match by name through region
-      if (area) {
+      // Area filter - only apply if specific area is selected
+      if (area && area !== "" && area !== "All") {
         const userRegion = regions.find((r) => r.regionId === user?.regionId)
         const userArea = areas.find((a) => a.areaId === userRegion?.areaId)
         if (userArea?.areaName !== area) {
-          console.log("[v0] Filtered out by area:", userArea?.areaName, "vs", area)
           return false
         }
       }
 
-      // Sales type filter - match by name instead of ID
-      if (salesType) {
-        const salesTypes = [
-          { salesTypeId: 1, salesTypeName: "Traditional" },
-          { salesTypeId: 2, salesTypeName: "Hybrid" },
-        ]
+      // Sales type filter - only apply if specific type is selected
+      if (salesType && salesType !== "" && salesType !== "All") {
         const userSalesType = salesTypes.find((st) => st.salesTypeId === user?.salesTypeId)
         if (userSalesType?.salesTypeName !== salesType) {
-          console.log("[v0] Filtered out by sales type:", userSalesType?.salesTypeName, "vs", salesType)
           return false
         }
       }
 
-      console.log("[v0] Report passed all filters")
       return true
     })
 
-    console.log("[v0] Filtered reports count:", filteredReports.length)
-
-    // Filter targets based on same criteria
     const filteredTargets = targets.filter((target) => {
       const user = users.find((u) => u.userId === target.salesRepId)
 
-      // Sales officer filter - match by name
-      if (salesOfficer && user?.name !== salesOfficer) return false
-
-      // Region filter - match by name
-      if (region) {
-        const userRegion = regions.find((r) => r.regionId === user?.regionId)
-        if (userRegion?.regionName !== region) return false
+      // Sales officer filter - only apply if specific officer is selected
+      if (salesOfficer && salesOfficer !== "" && salesOfficer !== "All" && user?.name !== salesOfficer) {
+        return false
       }
 
-      // Area filter - match by name through region
-      if (area) {
+      // Region filter - only apply if specific region is selected
+      if (region && region !== "" && region !== "All") {
+        const userRegion = regions.find((r) => r.regionId === user?.regionId)
+        if (userRegion?.regionName !== region) {
+          return false
+        }
+      }
+
+      // Area filter - only apply if specific area is selected
+      if (area && area !== "" && area !== "All") {
         const userRegion = regions.find((r) => r.regionId === user?.regionId)
         const userArea = areas.find((a) => a.areaId === userRegion?.areaId)
-        if (userArea?.areaName !== area) return false
+        if (userArea?.areaName !== area) {
+          return false
+        }
       }
 
-      // Sales type filter - match by name
-      if (salesType) {
-        const salesTypes = [
-          { salesTypeId: 1, salesTypeName: "Traditional" },
-          { salesTypeId: 2, salesTypeName: "Hybrid" },
-        ]
+      // Sales type filter - only apply if specific type is selected
+      if (salesType && salesType !== "" && salesType !== "All") {
         const userSalesType = salesTypes.find((st) => st.salesTypeId === user?.salesTypeId)
-        if (userSalesType?.salesTypeName !== salesType) return false
+        if (userSalesType?.salesTypeName !== salesType) {
+          return false
+        }
       }
 
       return true
     })
+
+    console.log("[v0] Filtered results - Reports:", filteredReports.length, "Targets:", filteredTargets.length)
+
+    if (filteredReports.length === 0 && filteredTargets.length === 0) {
+      console.log("[v0] No data found for the selected filters")
+      return Response.json({
+        kpis: [],
+        message: "No data found for the selected filters.",
+        hasData: false,
+      })
+    }
 
     // Aggregate data
     const aggregatedData = {
@@ -146,9 +147,11 @@ export async function GET(request) {
       },
     }
 
+    console.log("[v0] Aggregated data:", aggregatedData)
+
     // Calculate KPIs
     const kpis = Object.entries(aggregatedData).map(([key, data]) => {
-      const achievement = data.target > 0 ? (data.actual / data.target) * 100 : 0
+      const achievement = data.target > 0 ? (data.actual / data.target) * 100 : data.actual > 0 ? null : 0
       const variance = data.actual - data.target
 
       return {
@@ -163,15 +166,25 @@ export async function GET(request) {
                 : "Agency Coops",
         actual: data.actual,
         target: data.target,
-        achievement: Math.round(achievement * 100) / 100,
+        achievement: achievement !== null ? Math.round(achievement * 100) / 100 : null,
         variance,
-        status: achievement >= 100 ? "success" : achievement >= 80 ? "warning" : "danger",
+        status:
+          achievement === null ? "info" : achievement >= 100 ? "success" : achievement >= 80 ? "warning" : "danger",
       }
     })
 
-    return Response.json({ kpis })
+    console.log("[v0] Final KPIs:", kpis)
+
+    return Response.json({ kpis, hasData: true })
   } catch (error) {
-    console.error("Dashboard data error:", error)
-    return Response.json({ error: "Failed to fetch dashboard data" }, { status: 500 })
+    console.error("[v0] Dashboard data error:", error)
+    return Response.json(
+      {
+        error: "Error loading data. Please check salesReports.json and salesTargets.json.",
+        kpis: [],
+        hasData: false,
+      },
+      { status: 500 },
+    )
   }
 }
