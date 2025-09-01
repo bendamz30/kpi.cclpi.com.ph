@@ -18,5 +18,60 @@
     "regionId": null,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
+  },
+  {
+    "userId": 101,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "RegionalUser",
+    "regionId": 1,
+    "salesTypeId": 1,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "userId": 102,
+    "name": "Aljun",
+    "email": "aljun@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "RegionalUser",
+    "regionId": 6,
+    "salesTypeId": 2,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "userId": 103,
+    "name": "Jazcyl Periodico",
+    "email": "jazcyl@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "RegionalUser",
+    "regionId": 6,
+    "salesTypeId": 2,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "userId": 104,
+    "name": "Elmer",
+    "email": "elmer@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "RegionalUser",
+    "regionId": 6,
+    "salesTypeId": 2,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "userId": 105,
+    "name": "Dianne",
+    "email": "dianne@example.com",
+    "passwordHash": "PLEASE_REPLACE_WITH_HASH",
+    "role": "RegionalUser",
+    "regionId": 6,
+    "salesTypeId": 2,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": null
   }
 ]
