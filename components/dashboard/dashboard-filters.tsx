@@ -42,10 +42,10 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   const [salesOfficers, setSalesOfficers] = useState<User[]>([])
 
   const [filters, setFilters] = useState({
-    salesType: "",
-    area: "",
-    region: "",
-    salesOfficer: "",
+    salesType: "all",
+    area: "all",
+    region: "all",
+    salesOfficer: "all",
     startDate: "",
     endDate: "",
     granularity: "monthly",
@@ -60,26 +60,34 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
 
   useEffect(() => {
     // Filter regions by selected area
-    if (filters.area) {
-      const filtered = regions.filter((region) => region.areaId === Number.parseInt(filters.area))
+    if (filters.area && filters.area !== "all") {
+      const filtered = regions.filter((region) => Number(region.areaId) === Number(filters.area))
       setFilteredRegions(filtered)
+
+      // Clear region if it's not in the new filtered list
+      if (filters.region && !filtered.find((r) => r.regionId.toString() === filters.region)) {
+        setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
+      }
     } else {
       setFilteredRegions([])
+      setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
     }
-    // Reset region when area changes
-    setFilters((prev) => ({ ...prev, region: "", salesOfficer: "" }))
   }, [filters.area, regions])
 
   useEffect(() => {
     // Filter sales officers by selected region
-    if (filters.region) {
-      const filtered = salesOfficers.filter((officer) => officer.regionId === Number.parseInt(filters.region))
+    if (filters.region && filters.region !== "all") {
+      const filtered = salesOfficers.filter((officer) => Number(officer.regionId) === Number(filters.region))
       setFilteredSalesOfficers(filtered)
+
+      // Clear sales officer if it's not in the new filtered list
+      if (filters.salesOfficer && !filtered.find((o) => o.userId.toString() === filters.salesOfficer)) {
+        setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
+      }
     } else {
       setFilteredSalesOfficers([])
+      setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
     }
-    // Reset sales officer when region changes
-    setFilters((prev) => ({ ...prev, salesOfficer: "" }))
   }, [filters.region, salesOfficers])
 
   const fetchDropdownData = async () => {
@@ -112,6 +120,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   }
 
   const handleApplyFilter = () => {
+    console.debug("[v0] Applying filters:", filters, " -> results: pending...")
     onFiltersChange(filters)
   }
 
@@ -123,9 +132,10 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Label htmlFor="salesType">Sales Type</Label>
             <Select value={filters.salesType} onValueChange={(value) => handleFilterChange("salesType", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select sales type" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {salesTypes.map((type) => (
                   <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
                     {type.salesTypeName}
@@ -139,9 +149,10 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Label htmlFor="area">Area</Label>
             <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select area" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {areas.map((area) => (
                   <SelectItem key={area.areaId} value={area.areaId.toString()}>
                     {area.areaName}
@@ -156,12 +167,13 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Select
               value={filters.region}
               onValueChange={(value) => handleFilterChange("region", value)}
-              disabled={!filters.area}
+              disabled={!filters.area || filters.area === "all"}
             >
               <SelectTrigger>
-                <SelectValue placeholder={filters.area ? "Select region" : "Select area first"} />
+                <SelectValue placeholder={filters.area && filters.area !== "all" ? "All" : "Select area first"} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {filteredRegions.map((region) => (
                   <SelectItem key={region.regionId} value={region.regionId.toString()}>
                     {region.regionName}
@@ -176,12 +188,13 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             <Select
               value={filters.salesOfficer}
               onValueChange={(value) => handleFilterChange("salesOfficer", value)}
-              disabled={!filters.region}
+              disabled={!filters.region || filters.region === "all"}
             >
               <SelectTrigger>
-                <SelectValue placeholder={filters.region ? "Select officer" : "Select region first"} />
+                <SelectValue placeholder={filters.region && filters.region !== "all" ? "All" : "Select region first"} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 {filteredSalesOfficers.map((officer) => (
                   <SelectItem key={officer.userId} value={officer.userId.toString()}>
                     {officer.name}
