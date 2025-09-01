@@ -20,6 +20,11 @@ interface Region {
   areaId: number
 }
 
+interface SalesType {
+  salesTypeId: number
+  salesTypeName: string
+}
+
 interface AddUserModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -34,7 +39,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     role: "",
     areaId: "",
     regionId: "",
-    salesType: "", // Changed to salesType string instead of salesTypeId
+    salesTypeId: "", // Changed from salesType to salesTypeId
     annualTarget: "",
     salesCounselorTarget: "",
     policySoldTarget: "",
@@ -43,10 +48,9 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [areas, setAreas] = useState<Area[]>([])
   const [regions, setRegions] = useState<Region[]>([])
   const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
+  const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
-
-  const salesTypeOptions = ["Life Plan", "Memorial Plan", "Insurance"]
 
   useEffect(() => {
     if (open) {
@@ -77,6 +81,12 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         const regionsData = await regionsResponse.json()
         setRegions(regionsData)
       }
+
+      const salesTypesResponse = await fetch("/api/sales-types")
+      if (salesTypesResponse.ok) {
+        const salesTypesData = await salesTypesResponse.json()
+        setSalesTypes(salesTypesData)
+      }
     } catch (error) {
       console.error("Failed to fetch dropdown data:", error)
     }
@@ -94,7 +104,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         role: formData.role === "admin" ? "SystemAdmin" : formData.role === "regionalUser" ? "RegionalUser" : "Viewer", // Map role values
         areaId: formData.areaId ? Number.parseInt(formData.areaId) : null,
         regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
-        salesType: formData.salesType, // Send salesType as string
+        salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null, // Changed from salesType to salesTypeId
         annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
         ...(formData.role === "regionalUser" && {
           // Check for regionalUser instead of RegionalUser
@@ -132,7 +142,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         role: "",
         areaId: "",
         regionId: "",
-        salesType: "",
+        salesTypeId: "", // Changed from salesType to salesTypeId
         annualTarget: "",
         salesCounselorTarget: "",
         policySoldTarget: "",
@@ -160,7 +170,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       role: "",
       areaId: "",
       regionId: "",
-      salesType: "",
+      salesTypeId: "", // Changed from salesType to salesTypeId
       annualTarget: "",
       salesCounselorTarget: "",
       policySoldTarget: "",
@@ -271,18 +281,18 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salesType">Sales Type</Label>
+                <Label htmlFor="salesTypeId">Sales Type</Label>
                 <Select
-                  value={formData.salesType}
-                  onValueChange={(value) => setFormData({ ...formData, salesType: value })}
+                  value={formData.salesTypeId} // Changed from salesType to salesTypeId
+                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })} // Changed from salesType to salesTypeId
                 >
                   <SelectTrigger aria-label="Select sales type">
                     <SelectValue placeholder="Select sales type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {salesTypeOptions.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
+                    {salesTypes.map((type) => (
+                      <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
+                        {type.salesTypeName}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,1 +1,1 @@
-[{ "salesTypeId": 1, "typeName": "Traditional" }, { "salesTypeId": 2, "typeName": "Hybrid" }]
+[{ "salesTypeId": 1, "salesTypeName": "Traditional" }, { "salesTypeId": 2, "salesTypeName": "Hybrid" }]
