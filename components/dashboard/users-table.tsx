@@ -11,6 +11,17 @@ import { Search, Plus, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react
 import { AddUserForm } from "./add-user-form"
 import { EditUserForm } from "./edit-user-form"
 import { regions } from "@/lib/mock-data"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface User {
   userId: number
@@ -29,6 +40,10 @@ export function UsersTable() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const { toast } = useToast()
 
   const fetchUsers = async () => {
     try {
@@ -62,6 +77,47 @@ export function UsersTable() {
   const handleEditUser = (user: User) => {
     setEditingUser(user)
     setShowEditDialog(true)
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setDeletingUser(user)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return
+
+    setDeleteLoading(true)
+    try {
+      const response = await fetch(`/api/users/${deletingUser.userId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "User deleted successfully",
+        })
+        fetchUsers() // Refresh the table
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.error || "Failed to delete user",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteLoading(false)
+      setShowDeleteDialog(false)
+      setDeletingUser(null)
+    }
   }
 
   const filteredUsers = users.filter(
@@ -154,7 +210,7 @@ export function UsersTable() {
                       <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(user)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -185,6 +241,32 @@ export function UsersTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+              {deletingUser?.role === "RegionalUser" && (
+                <span className="block mt-2 text-sm text-muted-foreground">
+                  This will also remove all related sales targets and reports.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteUser}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

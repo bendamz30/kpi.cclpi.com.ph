@@ -20,7 +20,25 @@ function writeJson(filePath, data) {
 export async function GET() {
   try {
     const users = readJson(usersFile)
-    return Response.json(users)
+    const salesTargets = readJson(salesTargetsFile)
+
+    const usersWithTargets = users.map((user) => {
+      if (user.role === "RegionalUser") {
+        const target = salesTargets.find((t) => t.salesRepId === user.userId)
+        if (target) {
+          return {
+            ...user,
+            annualTarget: target.premiumTarget,
+            salesCounselorTarget: target.salesCounselorTarget,
+            policySoldTarget: target.policySoldTarget,
+            agencyCoopTarget: target.agencyCoopTarget,
+          }
+        }
+      }
+      return user
+    })
+
+    return Response.json(usersWithTargets)
   } catch (err) {
     console.error("Error reading users:", err)
     return Response.json({ error: "Internal server error" }, { status: 500 })

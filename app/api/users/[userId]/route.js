@@ -118,3 +118,49 @@ export async function PUT(request, { params }) {
     return Response.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const { userId } = params
+    const userIdNum = Number.parseInt(userId)
+
+    if (!userIdNum) {
+      return Response.json({ error: "Invalid user ID" }, { status: 400 })
+    }
+
+    const users = readJsonFile("users.json")
+    const salesTargets = readJsonFile("salesTargets.json")
+    const salesReports = readJsonFile("salesReports.json")
+
+    const userIndex = users.findIndex((u) => u.userId === userIdNum)
+    if (userIndex === -1) {
+      return Response.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const user = users[userIndex]
+
+    // Remove user from users.json
+    users.splice(userIndex, 1)
+
+    // If RegionalUser, remove related records from salesTargets.json and salesReports.json
+    if (user.role === "RegionalUser") {
+      // Remove sales targets
+      const updatedTargets = salesTargets.filter((st) => st.salesRepId !== userIdNum)
+      writeJsonFile("salesTargets.json", updatedTargets)
+
+      // Remove sales reports
+      const updatedReports = salesReports.filter((sr) => sr.salesRepId !== userIdNum)
+      writeJsonFile("salesReports.json", updatedReports)
+    }
+
+    writeJsonFile("users.json", users)
+
+    return Response.json({
+      message: "User deleted successfully",
+      deletedUser: user,
+    })
+  } catch (error) {
+    console.error("Error deleting user:", error)
+    return Response.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
