@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import { AddUserForm } from "./add-user-form"
 import { EditUserForm } from "./edit-user-form"
-import { regions } from "@/lib/mock-data"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,9 +32,16 @@ interface User {
   updatedAt: string | null
 }
 
+interface Region {
+  regionId: number
+  regionName: string
+  areaId: number
+}
+
 export function UsersTable() {
   const [searchTerm, setSearchTerm] = useState("")
   const [users, setUsers] = useState<User[]>([])
+  const [regions, setRegions] = useState<Region[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -59,8 +65,21 @@ export function UsersTable() {
     }
   }
 
+  const fetchRegions = async () => {
+    try {
+      const response = await fetch("/api/regions")
+      if (response.ok) {
+        const regionsData = await response.json()
+        setRegions(regionsData)
+      }
+    } catch (error) {
+      console.error("Failed to fetch regions:", error)
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
+    fetchRegions()
   }, [])
 
   const handleUserAdded = () => {
@@ -246,12 +265,12 @@ export function UsersTable() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this user? This action cannot be undone.
-              {deletingUser?.role === "RegionalUser" && (
-                <span className="block mt-2 text-sm text-muted-foreground">
-                  This will also remove all related sales targets and reports.
-                </span>
-              )}
             </AlertDialogDescription>
+            {deletingUser?.role === "RegionalUser" && (
+              <span className="block mt-2 text-sm text-muted-foreground">
+                This will also remove all related sales targets and reports.
+              </span>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>

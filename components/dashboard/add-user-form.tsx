@@ -244,7 +244,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="regionalUser">Regional User</SelectItem>
-                    <SelectItem value="salesUser">Sales User</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
