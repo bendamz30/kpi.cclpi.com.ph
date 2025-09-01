@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -51,6 +51,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -67,6 +68,12 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       setFilteredRegions([])
     }
   }, [formData.areaId, regions])
+
+  useEffect(() => {
+    if (formData.role && nameInputRef.current) {
+      nameInputRef.current.focus()
+    }
+  }, [formData.role])
 
   const fetchDropdownData = async () => {
     try {
@@ -196,6 +203,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
                 <Input
+                  ref={nameInputRef}
                   id="name"
                   aria-label="User full name"
                   value={formData.name}
@@ -243,7 +251,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className={`space-y-4 ${formData.role !== "regionalUser" ? "hidden" : ""}`}>
             <h3 className="text-lg font-medium">Assignment</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -301,63 +309,61 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
           </div>
 
-          {formData.role === "regionalUser" && (
+          <div className={`space-y-4 ${formData.role !== "regionalUser" ? "hidden" : ""}`}>
+            <h3 className="text-lg font-medium">Sales Targets</h3>
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Sales Targets</h3>
-              <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="annualTarget">Annual Premium Target *</Label>
+                <Input
+                  id="annualTarget"
+                  type="number"
+                  aria-label="Annual premium target amount"
+                  placeholder="12000000"
+                  value={formData.annualTarget}
+                  onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
+                  required={formData.role === "regionalUser"}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="annualTarget">Annual Premium Target *</Label>
+                  <Label htmlFor="salesCounselorTarget">Sales Counselor Target *</Label>
                   <Input
-                    id="annualTarget"
+                    id="salesCounselorTarget"
                     type="number"
-                    aria-label="Annual premium target amount"
-                    placeholder="12000000"
-                    value={formData.annualTarget}
-                    onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
-                    required
+                    aria-label="Sales counselor target count"
+                    placeholder="165"
+                    value={formData.salesCounselorTarget}
+                    onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
+                    required={formData.role === "regionalUser"}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="salesCounselorTarget">Sales Counselor Target *</Label>
-                    <Input
-                      id="salesCounselorTarget"
-                      type="number"
-                      aria-label="Sales counselor target count"
-                      placeholder="165"
-                      value={formData.salesCounselorTarget}
-                      onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="policySoldTarget">Policy Sold Target *</Label>
-                    <Input
-                      id="policySoldTarget"
-                      type="number"
-                      aria-label="Policy sold target count"
-                      placeholder="1362"
-                      value={formData.policySoldTarget}
-                      onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="agencyCoopTarget">Agency Coop Target *</Label>
-                    <Input
-                      id="agencyCoopTarget"
-                      type="number"
-                      aria-label="Agency cooperation target count"
-                      placeholder="12"
-                      value={formData.agencyCoopTarget}
-                      onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="policySoldTarget">Policy Sold Target *</Label>
+                  <Input
+                    id="policySoldTarget"
+                    type="number"
+                    aria-label="Policy sold target count"
+                    placeholder="1362"
+                    value={formData.policySoldTarget}
+                    onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
+                    required={formData.role === "regionalUser"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agencyCoopTarget">Agency Coop Target *</Label>
+                  <Input
+                    id="agencyCoopTarget"
+                    type="number"
+                    aria-label="Agency cooperation target count"
+                    placeholder="12"
+                    value={formData.agencyCoopTarget}
+                    onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
+                    required={formData.role === "regionalUser"}
+                  />
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
