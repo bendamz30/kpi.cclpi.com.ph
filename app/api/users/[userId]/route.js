@@ -26,7 +26,18 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json()
-    const { name, email, passwordHash, role, regionId, salesTypeId, annualTarget } = body
+    const {
+      name,
+      email,
+      passwordHash,
+      role,
+      regionId,
+      salesTypeId,
+      annualTarget,
+      salesCounselorTarget,
+      policySoldTarget,
+      agencyCoopTarget,
+    } = body
 
     const users = readJsonFile("users.json")
     const salesTargets = readJsonFile("salesTargets.json")
@@ -63,23 +74,24 @@ export async function PUT(request, { params }) {
       const targetIndex = salesTargets.findIndex((st) => st.salesRepId === userIdNum)
 
       if (targetIndex !== -1) {
-        // Update existing target
         salesTargets[targetIndex] = {
           ...salesTargets[targetIndex],
           premiumTarget: annualTarget,
+          salesCounselorTarget: salesCounselorTarget || 0,
+          policySoldTarget: policySoldTarget || 0,
+          agencyCoopTarget: agencyCoopTarget || 0,
           updatedAt: currentTime,
         }
       } else {
-        // Create new target
         const maxTargetId = Math.max(...salesTargets.map((st) => st.targetId), 200)
         const newTarget = {
           targetId: maxTargetId + 1,
           salesRepId: userIdNum,
           year: new Date().getFullYear(),
           premiumTarget: annualTarget,
-          salesCounselorTarget: 0,
-          policySoldTarget: 0,
-          agencyCoopTarget: 0,
+          salesCounselorTarget: salesCounselorTarget || 0,
+          policySoldTarget: policySoldTarget || 0,
+          agencyCoopTarget: agencyCoopTarget || 0,
           createdBy: 1, // Assuming admin user ID is 1
           createdAt: currentTime,
           updatedAt: null,
