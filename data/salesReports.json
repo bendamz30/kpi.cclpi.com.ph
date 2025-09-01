@@ -10,5 +10,53 @@
     "createdBy": 1,
     "createdAt": "2025-08-01T08:00:00Z",
     "updatedAt": null
+  },
+  {
+    "reportId": 303,
+    "salesRepId": 102,
+    "reportDate": "2025-09-01",
+    "premiumActual": 1080.0,
+    "salesCounselorActual": 1,
+    "policySoldActual": 1,
+    "agencyCoopActual": 1,
+    "createdBy": 1,
+    "createdAt": "2025-09-01T08:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "reportId": 304,
+    "salesRepId": 103,
+    "reportDate": "2025-09-01",
+    "premiumActual": 540.0,
+    "salesCounselorActual": 1,
+    "policySoldActual": 1,
+    "agencyCoopActual": 1,
+    "createdBy": 1,
+    "createdAt": "2025-09-01T08:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "reportId": 305,
+    "salesRepId": 104,
+    "reportDate": "2025-09-01",
+    "premiumActual": 1080.0,
+    "salesCounselorActual": 2,
+    "policySoldActual": 1,
+    "agencyCoopActual": 1,
+    "createdBy": 1,
+    "createdAt": "2025-09-01T08:00:00Z",
+    "updatedAt": null
+  },
+  {
+    "reportId": 306,
+    "salesRepId": 105,
+    "reportDate": "2025-09-01",
+    "premiumActual": 27000.0,
+    "salesCounselorActual": 1,
+    "policySoldActual": 1,
+    "agencyCoopActual": 1,
+    "createdBy": 1,
+    "createdAt": "2025-09-01T08:00:00Z",
+    "updatedAt": null
   }
 ]
