@@ -4,9 +4,6 @@ import { useState, useEffect } from "react"
 import { LoginForm } from "@/components/auth/login-form"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
-import { KPICards } from "@/components/dashboard/kpi-cards"
-import { SalesChart } from "@/components/dashboard/sales-chart"
-import { Filters } from "@/components/dashboard/filters"
 import { SalesRepsTable } from "@/components/dashboard/sales-reps-table"
 import { UsersTable } from "@/components/dashboard/users-table"
 import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
@@ -15,7 +12,6 @@ import type { User } from "@/lib/mock-data"
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [filters, setFilters] = useState({})
 
   useEffect(() => {
     const auth = getStoredAuth()
@@ -34,11 +30,6 @@ export default function HomePage() {
     setActiveTab("dashboard")
   }
 
-  const handleFiltersChange = (newFilters: any) => {
-    setFilters(newFilters)
-    console.log("[v0] Filters applied:", newFilters)
-  }
-
   if (!user) {
     return <LoginForm onLogin={handleLogin} />
   }
@@ -50,11 +41,8 @@ export default function HomePage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">Welcome back, {user.name}! Here's your sales overview.</p>
+              <p className="text-muted-foreground">Dashboard content has been cleared.</p>
             </div>
-            <Filters onFiltersChange={handleFiltersChange} />
-            <KPICards />
-            <SalesChart />
           </div>
         )
       case "sales-reps":
