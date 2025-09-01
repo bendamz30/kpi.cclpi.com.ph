@@ -333,7 +333,25 @@ export default function HomePage() {
             const region = regions.find((r: any) => Number(r.regionId) === Number(user?.regionId))
             const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user?.salesTypeId))
 
-            return {
+            if (!user) {
+              console.debug(`[v0] Missing user for salesRepId: ${report.salesRepId}`)
+            } else {
+              if (!user.areaId) {
+                console.debug(`[v0] Missing areaId for user: ${user.name} (userId: ${user.userId})`)
+              }
+              if (!user.regionId) {
+                console.debug(`[v0] Missing regionId for user: ${user.name} (userId: ${user.userId})`)
+              }
+              if (!user.salesTypeId) {
+                console.debug(`[v0] Missing salesTypeId for user: ${user.name} (userId: ${user.userId})`)
+              }
+            }
+
+            if (!target) {
+              console.debug(`[v0] Missing salesTarget for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
+            }
+
+            const mergedReport = {
               ...report,
               areaId: Number(user?.areaId) || 0,
               regionId: Number(user?.regionId) || 0,
@@ -342,11 +360,18 @@ export default function HomePage() {
               regionName: region?.regionName || "Unknown",
               salesTypeName: salesType?.salesTypeName || "Unknown",
               userName: user?.name || "Unknown",
+              // Keep actual values from report, set targets to 0 if missing (don't zero out actuals)
               premiumTarget: Number(target?.premiumTarget) || 0,
               salesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
               policySoldTarget: Number(target?.policySoldTarget) || 0,
               agencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
             }
+
+            if (report.salesRepId === 105) {
+              console.debug("[v0] Dianne's merged report:", mergedReport)
+            }
+
+            return mergedReport
           })
         }
 

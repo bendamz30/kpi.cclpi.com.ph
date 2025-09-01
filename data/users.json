@@ -6,6 +6,7 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "Admin",
     "regionId": null,
+    "areaId": null,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
   },
@@ -16,6 +17,7 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "Viewer",
     "regionId": null,
+    "areaId": null,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
   },
@@ -26,6 +28,7 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "RegionalUser",
     "regionId": 1,
+    "areaId": 1,
     "salesTypeId": 1,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
@@ -37,6 +40,7 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "RegionalUser",
     "regionId": 6,
+    "areaId": 2,
     "salesTypeId": 2,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
@@ -48,6 +52,7 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "RegionalUser",
     "regionId": 6,
+    "areaId": 2,
     "salesTypeId": 2,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
@@ -59,18 +64,20 @@
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "RegionalUser",
     "regionId": 6,
+    "areaId": 2,
     "salesTypeId": 2,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
   },
   {
     "userId": 105,
-    "name": "Dianne",
+    "name": "Dianne Adlaon",
     "email": "dianne@example.com",
     "passwordHash": "PLEASE_REPLACE_WITH_HASH",
     "role": "RegionalUser",
-    "regionId": 6,
-    "salesTypeId": 2,
+    "regionId": 1,
+    "areaId": 1,
+    "salesTypeId": 1,
     "createdAt": "2025-01-01T00:00:00Z",
     "updatedAt": null
   }
