@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Search, Plus, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react"
-import { AddUserForm } from "./add-user-form"
+import { Search, Plus, Edit, Trash2 } from "lucide-react"
+import { AddUserModal } from "./add-user-form"
 import { EditUserForm } from "./edit-user-form"
 import { regions } from "@/lib/mock-data"
 import {
@@ -37,7 +37,7 @@ export function UsersTable() {
   const [searchTerm, setSearchTerm] = useState("")
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
@@ -65,7 +65,6 @@ export function UsersTable() {
 
   const handleUserAdded = () => {
     fetchUsers()
-    setShowAddForm(false)
   }
 
   const handleUserEdited = () => {
@@ -165,10 +164,9 @@ export function UsersTable() {
               <CardTitle>System Users</CardTitle>
               <CardDescription>Manage user accounts and permissions</CardDescription>
             </div>
-            <Button onClick={() => setShowAddForm(!showAddForm)}>
+            <Button onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add User
-              {showAddForm ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
             </Button>
           </div>
           <div className="flex items-center space-x-2">
@@ -229,7 +227,7 @@ export function UsersTable() {
         </CardContent>
       </Card>
 
-      {showAddForm && <AddUserForm onUserAdded={handleUserAdded} />}
+      <AddUserModal open={showAddModal} onOpenChange={setShowAddModal} onUserAdded={handleUserAdded} />
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-4xl">
