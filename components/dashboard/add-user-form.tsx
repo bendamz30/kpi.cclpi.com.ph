@@ -362,3 +362,5 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     </Dialog>
   )
 }
+
+export { AddUserModal as AddUserForm }

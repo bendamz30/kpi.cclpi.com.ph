@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
-import { AddUserModal } from "./add-user-form"
+import { AddUserForm } from "./add-user-form"
 import { EditUserForm } from "./edit-user-form"
 import { regions } from "@/lib/mock-data"
 import {
@@ -227,7 +227,7 @@ export function UsersTable() {
         </CardContent>
       </Card>
 
-      <AddUserModal open={showAddModal} onOpenChange={setShowAddModal} onUserAdded={handleUserAdded} />
+      <AddUserForm open={showAddModal} onOpenChange={setShowAddModal} onUserAdded={handleUserAdded} />
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-4xl">
