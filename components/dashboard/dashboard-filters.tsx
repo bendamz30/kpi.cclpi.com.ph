@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Filter } from "lucide-react"
 
 interface FilterProps {
-  onFilterChange: (filters: any) => void
+  onFiltersChange: (filters: any) => void
 }
 
 interface Area {
@@ -35,7 +35,7 @@ interface User {
   role: string
 }
 
-export function DashboardFilters({ onFilterChange }: FilterProps) {
+export function DashboardFilters({ onFiltersChange }: FilterProps) {
   const [areas, setAreas] = useState<Area[]>([])
   const [regions, setRegions] = useState<Region[]>([])
   const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
@@ -112,7 +112,7 @@ export function DashboardFilters({ onFilterChange }: FilterProps) {
   }
 
   const handleApplyFilter = () => {
-    onFilterChange(filters)
+    onFiltersChange(filters)
   }
 
   return (
