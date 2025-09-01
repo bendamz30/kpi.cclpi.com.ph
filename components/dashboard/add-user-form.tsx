@@ -14,6 +14,12 @@ interface Area {
   areaName: string
 }
 
+interface Region {
+  regionId: number
+  regionName: string
+  areaId: number
+}
+
 interface SalesType {
   salesTypeId: number
   typeName: string
@@ -32,7 +38,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     passwordHash: "",
     role: "",
     areaId: "",
-    region: "",
+    regionId: "", // Changed from region to regionId
     salesTypeId: "",
     annualTarget: "",
     salesCounselorTarget: "",
@@ -40,6 +46,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     agencyCoopTarget: "",
   })
   const [areas, setAreas] = useState<Area[]>([])
+  const [regions, setRegions] = useState<Region[]>([]) // Added regions state
+  const [filteredRegions, setFilteredRegions] = useState<Region[]>([]) // Added filtered regions state
   const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -50,16 +58,30 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     }
   }, [open])
 
+  useEffect(() => {
+    if (formData.areaId) {
+      const filtered = regions.filter((region) => region.areaId === Number.parseInt(formData.areaId))
+      setFilteredRegions(filtered)
+      setFormData((prev) => ({ ...prev, regionId: "" }))
+    } else {
+      setFilteredRegions([])
+    }
+  }, [formData.areaId, regions])
+
   const fetchDropdownData = async () => {
     try {
-      // Fetch areas from areas.json
       const areasResponse = await fetch("/data/areas.json")
       if (areasResponse.ok) {
         const areasData = await areasResponse.json()
         setAreas(areasData)
       }
 
-      // Fetch sales types from salesTypes.json
+      const regionsResponse = await fetch("/data/regions.json")
+      if (regionsResponse.ok) {
+        const regionsData = await regionsResponse.json()
+        setRegions(regionsData)
+      }
+
       const salesTypesResponse = await fetch("/data/salesTypes.json")
       if (salesTypesResponse.ok) {
         const salesTypesData = await salesTypesResponse.json()
@@ -81,7 +103,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         passwordHash: formData.passwordHash || "PLEASE_REPLACE_WITH_HASH",
         role: formData.role,
         areaId: formData.areaId ? Number.parseInt(formData.areaId) : null,
-        region: formData.region,
+        regionId: formData.regionId ? Number.parseInt(formData.regionId) : null, // Changed from region to regionId
         salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null,
         annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
         ...(formData.role === "RegionalUser" && {
@@ -118,7 +140,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         passwordHash: "",
         role: "",
         areaId: "",
-        region: "",
+        regionId: "", // Changed from region to regionId
         salesTypeId: "",
         annualTarget: "",
         salesCounselorTarget: "",
@@ -146,7 +168,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       passwordHash: "",
       role: "",
       areaId: "",
-      region: "",
+      regionId: "", // Changed from region to regionId
       salesTypeId: "",
       annualTarget: "",
       salesCounselorTarget: "",
@@ -233,13 +255,23 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="region">Region</Label>
-                <Input
-                  id="region"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  placeholder="Enter region"
-                />
+                <Label htmlFor="regionId">Region</Label>
+                <Select
+                  value={formData.regionId}
+                  onValueChange={(value) => setFormData({ ...formData, regionId: value })}
+                  disabled={!formData.areaId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredRegions.map((region) => (
+                      <SelectItem key={region.regionId} value={region.regionId.toString()}>
+                        {region.regionName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="salesTypeId">Sales Type</Label>
