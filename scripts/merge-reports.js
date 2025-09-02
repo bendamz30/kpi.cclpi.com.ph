@@ -39,25 +39,25 @@ function getPeriodKey(dateStr, group) {
     const week = Math.ceil((diff + start.getDay() + 1) / 7)
     return `${y}-W${String(week).padStart(2, "0")}`
   }
+  if (group === "daily") {
+    return d.toISOString().split("T")[0]
+  }
   return d.toISOString().split("T")[0]
 }
 function calcTarget(annual, start, end, mode) {
   if (!annual) return 0
-  if (!start || !end) return annual
-  const s = new Date(start)
-  const e = new Date(end)
-  const days = Math.ceil((e - s) / 86400000) + 1
+
   if (mode === "monthly") {
-    const per = annual / 12
-    const months = Math.max(1, Math.ceil(days / 30))
-    return per * months
+    return Math.round((annual / 12) * 100) / 100
   }
   if (mode === "weekly") {
-    const per = annual / 48
-    const weeks = Math.max(1, Math.ceil(days / 7))
-    return per * weeks
+    return Math.round((annual / 48) * 100) / 100
   }
-  return annual
+  if (mode === "daily") {
+    return Math.round((annual / 365) * 100) / 100
+  }
+
+  return annual // default annual target
 }
 
 // ---------------- Main ----------------
