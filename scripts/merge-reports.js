@@ -126,17 +126,15 @@ function getPeriodKey(dateString, groupBy) {
 /**
  * Calculate target based on annual target and filter context
  * @param {number} annualTarget - The annual target value
- * @param {Object} filterContext - Contains granularity and date range info
- * @param {string} filterContext.granularity - 'monthly', 'weekly', or 'annual'
- * @param {string} filterContext.startDate - Start date (optional)
- * @param {string} filterContext.endDate - End date (optional)
+ * @param {string} startDate - Start date (optional)
+ * @param {string} endDate - End date (optional)
+ * @param {string} mode - 'monthly', 'weekly', or 'annual'
  * @returns {number} Adjusted target value
  */
-function calculateTarget(annualTarget, filterContext) {
+function calculateTarget(annualTarget, startDate, endDate, mode = "monthly") {
   if (!annualTarget || annualTarget === 0) return 0
 
-  const { granularity = "monthly", startDate, endDate } = filterContext
-
+  // If no date range is provided, return full annual target
   if (!startDate || !endDate) {
     return annualTarget
   }
@@ -147,16 +145,28 @@ function calculateTarget(annualTarget, filterContext) {
     const diffTime = Math.abs(end - start)
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Include both start and end dates
 
-    if (granularity === "monthly") {
-      // Calculate number of months more accurately
-      const diffMonths = Math.ceil(diffDays / 30.44) // Average days per month
+    if (mode === "monthly") {
       const monthlyTarget = annualTarget / 12
-      return Math.round(monthlyTarget * diffMonths * 100) / 100
-    } else if (granularity === "weekly") {
-      // Calculate number of weeks
-      const diffWeeks = Math.ceil(diffDays / 7)
-      const weeklyTarget = annualTarget / 52
-      return Math.round(weeklyTarget * diffWeeks * 100) / 100
+
+      // If less than 1 month, show 1 month target
+      if (diffDays < 30) {
+        return Math.round(monthlyTarget * 100) / 100
+      }
+
+      // Calculate number of months and multiply
+      const months = Math.ceil(diffDays / 30)
+      return Math.round(monthlyTarget * months * 100) / 100
+    } else if (mode === "weekly") {
+      const weeklyTarget = annualTarget / 48 // Changed from 52 to 48
+
+      // If less than 7 days, show 1 week target
+      if (diffDays < 7) {
+        return Math.round(weeklyTarget * 100) / 100
+      }
+
+      // Calculate number of weeks and multiply
+      const weeks = Math.ceil(diffDays / 7)
+      return Math.round(weeklyTarget * weeks * 100) / 100
     }
   } catch (error) {
     console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
@@ -368,17 +378,31 @@ async function main() {
       }
 
       if (annualTarget) {
-        const filterContext = {
-          granularity: options.group || "monthly",
-          startDate: options.start,
-          endDate: options.end,
-        }
-
         groupTargets = {
-          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), filterContext),
-          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), filterContext),
-          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), filterContext),
-          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), filterContext),
+          premiumTarget: calculateTarget(
+            safeNumber(annualTarget.premiumTarget),
+            options.start,
+            options.end,
+            options.group,
+          ),
+          salesCounselorTarget: calculateTarget(
+            safeNumber(annualTarget.salesCounselorTarget),
+            options.start,
+            options.end,
+            options.group,
+          ),
+          policySoldTarget: calculateTarget(
+            safeNumber(annualTarget.policySoldTarget),
+            options.start,
+            options.end,
+            options.group,
+          ),
+          agencyCoopTarget: calculateTarget(
+            safeNumber(annualTarget.agencyCoopTarget),
+            options.start,
+            options.end,
+            options.group,
+          ),
         }
       }
 
