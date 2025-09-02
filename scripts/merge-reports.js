@@ -126,11 +126,11 @@ function getPeriodKey(dateString, groupBy) {
 async function main() {
   console.log("🚀 Starting merge reports process...\n")
 
-  // Read all JSON files
   console.log("📖 Reading JSON files...")
   const users = readJsonFile("users.json")
   const salesReports = readJsonFile("salesReports.json")
   const salesTargets = readJsonFile("salesTargets.json")
+  const salesRepresentatives = readJsonFile("salesRepresentatives.json")
   const salesTypes = readJsonFile("salesTypes.json")
   const areas = readJsonFile("areas.json")
   const regions = readJsonFile("regions.json")
@@ -138,12 +138,13 @@ async function main() {
   console.log(`✅ Loaded ${users.length} users`)
   console.log(`✅ Loaded ${salesReports.length} sales reports`)
   console.log(`✅ Loaded ${salesTargets.length} sales targets`)
+  console.log(`✅ Loaded ${salesRepresentatives.length} sales representatives`)
   console.log(`✅ Loaded ${salesTypes.length} sales types`)
   console.log(`✅ Loaded ${areas.length} areas`)
   console.log(`✅ Loaded ${regions.length} regions\n`)
 
-  // Create lookup maps for faster access
   const userMap = new Map(users.map((user) => [user.userId, user]))
+  const salesRepMap = new Map(salesRepresentatives.map((rep) => [rep.salesRepId, rep]))
   const salesTypeMap = new Map(salesTypes.map((type) => [type.salesTypeId, type.salesTypeName]))
   const areaMap = new Map(areas.map((area) => [area.areaId, area.areaName]))
   const regionMap = new Map(regions.map((region) => [region.regionId, region.regionName]))
@@ -169,10 +170,28 @@ async function main() {
         return // Skip this report
       }
 
-      // Lookup user information
-      const user = userMap.get(report.salesRepId)
-      if (!user) {
-        console.warn(`⚠️  User not found for salesRepId: ${report.salesRepId}`)
+      const salesRep = salesRepMap.get(report.salesRepId)
+      if (!salesRep) {
+        console.warn(`⚠️  Sales representative not found for salesRepId: ${report.salesRepId}`)
+        return
+      }
+
+      let enrichedUserData = null
+      if (salesRep.userId) {
+        enrichedUserData = userMap.get(salesRep.userId)
+        if (!enrichedUserData) {
+          console.warn(`⚠️  User not found for userId: ${salesRep.userId} (salesRepId: ${report.salesRepId})`)
+        }
+      }
+
+      if (!salesRep.areaId) {
+        console.warn(`⚠️  Missing areaId for salesRepId: ${report.salesRepId}`)
+      }
+      if (!salesRep.regionId) {
+        console.warn(`⚠️  Missing regionId for salesRepId: ${report.salesRepId}`)
+      }
+      if (!salesRep.salesTypeId) {
+        console.warn(`⚠️  Missing salesTypeId for salesRepId: ${report.salesRepId}`)
       }
 
       // Extract year from report date
@@ -187,27 +206,32 @@ async function main() {
       const target = targetsMap.get(targetKey)
       const targetExists = !!target
 
+      if (!targetExists) {
+        console.warn(`⚠️  No sales target found for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
+      }
+
       if (targetExists) {
         reportsWithTargets++
       } else {
         reportsWithoutTargets++
       }
 
-      // Build merged object
       const mergedReport = {
         // Report fields
         reportId: report.reportId,
         reportDate: report.reportDate,
         salesRepId: report.salesRepId,
-        salesRepName: user ? user.name : "Unknown",
+        salesRepName: enrichedUserData ? enrichedUserData.name : salesRep.name,
 
-        // Location and type information
-        areaId: user ? user.areaId : null,
-        areaName: user && user.areaId ? areaMap.get(user.areaId) || "Unknown" : null,
-        regionId: user ? user.regionId : null,
-        regionName: user && user.regionId ? regionMap.get(user.regionId) || "Unknown" : null,
-        salesTypeId: user ? user.salesTypeId : null,
-        salesTypeName: user && user.salesTypeId ? salesTypeMap.get(user.salesTypeId) || "Unknown" : null,
+        areaId: salesRep.areaId,
+        areaName: salesRep.areaId ? areaMap.get(salesRep.areaId) || "Unknown" : null,
+        regionId: salesRep.regionId,
+        regionName: salesRep.regionId ? regionMap.get(salesRep.regionId) || "Unknown" : null,
+        salesTypeId: salesRep.salesTypeId,
+        salesTypeName: salesRep.salesTypeId ? salesTypeMap.get(salesRep.salesTypeId) || "Unknown" : null,
+
+        userEmail: enrichedUserData ? enrichedUserData.email : null,
+        userId: salesRep.userId,
 
         // Premium metrics
         premiumActual: safeNumber(report.premiumActual),
