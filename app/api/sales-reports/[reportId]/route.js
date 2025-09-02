@@ -1,5 +1,5 @@
-const fs = require("fs").promises
-const path = require("path")
+import { promises as fs } from "fs"
+import path from "path"
 
 // PUT - Update a sales report
 export async function PUT(request, { params }) {

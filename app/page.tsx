@@ -81,6 +81,18 @@ export default function HomePage() {
     }
   }, [])
 
+  const calculateMonthsInRange = (startDate?: string, endDate?: string): number => {
+    if (!startDate || !endDate) return 12 // Default to full year if no range specified
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    const yearDiff = end.getFullYear() - start.getFullYear()
+    const monthDiff = end.getMonth() - start.getMonth()
+
+    return Math.max(1, yearDiff * 12 + monthDiff + 1) // +1 to include both start and end months
+  }
+
   const applyFilters = (reports: MergedReport[], filters: FilterCriteria): MergedReport[] => {
     console.debug("[v0] applyFilters called with filters:", filters)
     console.debug("[v0] Input reports count:", reports.length)
@@ -160,7 +172,7 @@ export default function HomePage() {
         console.debug("[v0] Dianne's report passed all filters!")
       }
 
-      // ... existing date filtering code ...
+      // Date filtering
       if (filters.startDate && filters.startDate !== "") {
         const reportDate = new Date(report.reportDate)
         const startDate = new Date(filters.startDate)
@@ -205,6 +217,9 @@ export default function HomePage() {
       repGroups.get(repId)!.push(report)
     })
 
+    const monthsInRange = calculateMonthsInRange(currentFilters.startDate, currentFilters.endDate)
+    console.debug("[v0] Months in selected range:", monthsInRange)
+
     const totals = {
       premiumActual: 0,
       premiumTarget: 0,
@@ -240,33 +255,18 @@ export default function HomePage() {
       const annualPolicySoldTarget = (firstReport as any)._annualPolicySoldTarget || 0
       const annualAgencyCoopTarget = (firstReport as any)._annualAgencyCoopTarget || 0
 
-      let repTargets = {
-        premiumTarget: annualPremiumTarget,
-        salesCounselorTarget: annualSalesCounselorTarget,
-        policySoldTarget: annualPolicySoldTarget,
-        agencyCoopTarget: annualAgencyCoopTarget,
+      const repTargets = {
+        premiumTarget: Math.round((annualPremiumTarget / 12) * monthsInRange * 100) / 100,
+        salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * monthsInRange * 100) / 100,
+        policySoldTarget: Math.round((annualPolicySoldTarget / 12) * monthsInRange * 100) / 100,
+        agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * monthsInRange * 100) / 100,
       }
 
-      if (currentFilters.granularity === "monthly") {
-        repTargets = {
-          premiumTarget: Math.round((annualPremiumTarget / 12) * 100) / 100,
-          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * 100) / 100,
-          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * 100) / 100,
-          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * 100) / 100,
-        }
-
-        console.debug("[v0] Rep", repId, "monthly targets:", {
-          annual: annualPremiumTarget,
-          monthly: repTargets.premiumTarget,
-        })
-      } else if (currentFilters.granularity === "weekly") {
-        repTargets = {
-          premiumTarget: Math.round((annualPremiumTarget / 48) * 100) / 100,
-          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 48) * 100) / 100,
-          policySoldTarget: Math.round((annualPolicySoldTarget / 48) * 100) / 100,
-          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 48) * 100) / 100,
-        }
-      }
+      console.debug("[v0] Rep", repId, "dynamic targets:", {
+        annual: annualPremiumTarget,
+        monthsInRange: monthsInRange,
+        dynamicTarget: repTargets.premiumTarget,
+      })
 
       // Add to totals
       totals.premiumActual += repActuals.premiumActual
@@ -569,13 +569,7 @@ export default function HomePage() {
               </p>
             </div>
             <DashboardFilters onFiltersChange={handleFiltersChange} />
-            <DashboardKPICards
-              data={kpiData}
-              loading={loading}
-              startDate={currentFilters.startDate}
-              endDate={currentFilters.endDate}
-              granularity={currentFilters.granularity}
-            />
+            <DashboardKPICards data={kpiData} loading={loading} />
           </div>
         )
       case "sales-reps":

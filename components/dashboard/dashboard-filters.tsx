@@ -50,7 +50,6 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
     salesOfficer: "all",
     startDate: "",
     endDate: "",
-    granularity: "monthly",
   })
 
   const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
@@ -264,7 +263,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="startDate">Start Date</Label>
             <Input
@@ -283,19 +282,6 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               value={filters.endDate}
               onChange={(e) => handleFilterChange("endDate", e.target.value)}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="granularity">Time Granularity</Label>
-            <Select value={filters.granularity} onValueChange={(value) => handleFilterChange("granularity", value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
