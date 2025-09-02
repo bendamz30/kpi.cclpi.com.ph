@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import { AddUserForm } from "./add-user-form"
 import { EditUserForm } from "./edit-user-form"
@@ -252,6 +252,7 @@ export function UsersTable() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>Update user information, role assignments, and sales targets.</DialogDescription>
           </DialogHeader>
           {editingUser && (
             <EditUserForm user={editingUser} onSuccess={handleUserEdited} onCancel={() => setShowEditDialog(false)} />
