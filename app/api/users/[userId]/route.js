@@ -31,6 +31,7 @@ export async function PUT(request, { params }) {
       email,
       passwordHash,
       role,
+      areaId, // Added areaId parameter to match add user form
       regionId,
       salesTypeId,
       annualTarget,
@@ -64,6 +65,7 @@ export async function PUT(request, { params }) {
       email,
       passwordHash,
       role,
+      areaId: areaId || null,
       regionId: regionId || null,
       salesTypeId: salesTypeId || null,
       updatedAt: currentTime,
