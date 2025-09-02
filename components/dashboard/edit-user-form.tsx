@@ -158,6 +158,28 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
     }
   }
 
+  const handleAreaChange = (value: string) => {
+    setFormData({ ...formData, areaId: value, regionId: "" })
+  }
+
+  const handleRegionChange = (value: string) => {
+    setFormData({ ...formData, regionId: value })
+  }
+
+  const handleRoleChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      role: value,
+      areaId: "",
+      regionId: "",
+      salesTypeId: "",
+      annualTarget: "",
+      salesCounselorTarget: "",
+      policySoldTarget: "",
+      agencyCoopTarget: "",
+    }))
+  }
+
   return (
     <div className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -201,8 +223,8 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                <SelectTrigger aria-label="Select user role">
+              <Select value={formData.role} onValueChange={handleRoleChange}>
+                <SelectTrigger aria-label="Select user role" aria-describedby="role-description">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,6 +233,9 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                   <SelectItem value="viewer">Viewer</SelectItem>
                 </SelectContent>
               </Select>
+              <div id="role-description" className="sr-only">
+                Select the user's role. Regional User role will show additional assignment and target fields.
+              </div>
             </div>
           </div>
         </div>
@@ -220,8 +245,8 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="areaId">Area</Label>
-              <Select value={formData.areaId} onValueChange={(value) => setFormData({ ...formData, areaId: value })}>
-                <SelectTrigger aria-label="Select area">
+              <Select value={formData.areaId} onValueChange={handleAreaChange}>
+                <SelectTrigger aria-label="Select area" aria-describedby="area-description">
                   <SelectValue placeholder="Select area" />
                 </SelectTrigger>
                 <SelectContent>
@@ -232,15 +257,14 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <div id="area-description" className="sr-only">
+                Select the area. This will filter available regions.
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="regionId">Region</Label>
-              <Select
-                value={formData.regionId}
-                onValueChange={(value) => setFormData({ ...formData, regionId: value })}
-                disabled={!formData.areaId}
-              >
-                <SelectTrigger aria-label="Select region">
+              <Select value={formData.regionId} onValueChange={handleRegionChange} disabled={!formData.areaId}>
+                <SelectTrigger aria-label="Select region" aria-describedby="region-description">
                   <SelectValue placeholder={!formData.areaId ? "Select area first" : "Select region"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,6 +275,9 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <div id="region-description" className="sr-only">
+                Select the region within the chosen area.
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="salesTypeId">Sales Type</Label>
@@ -258,7 +285,7 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                 value={formData.salesTypeId}
                 onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })}
               >
-                <SelectTrigger aria-label="Select sales type">
+                <SelectTrigger aria-label="Select sales type" aria-describedby="salestype-description">
                   <SelectValue placeholder="Select sales type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,6 +296,9 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <div id="salestype-description" className="sr-only">
+                Select the sales type for this user.
+              </div>
             </div>
           </div>
         </div>
