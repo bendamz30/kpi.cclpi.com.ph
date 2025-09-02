@@ -50,6 +50,10 @@ interface MergedReport {
   salesCounselorTarget: number
   policySoldTarget: number
   agencyCoopTarget: number
+  _annualPremiumTarget: number
+  _annualSalesCounselorTarget: number
+  _annualPolicySoldTarget: number
+  _annualAgencyCoopTarget: number
 }
 
 export default function HomePage() {
@@ -192,30 +196,85 @@ export default function HomePage() {
   const aggregateReportsToKPIs = (reports: MergedReport[]): KpiType[] => {
     console.debug("[v0] Aggregating KPIs from", reports.length, "reports")
 
-    const totals = reports.reduce(
-      (acc, report) => {
-        // Ensure numeric values with fallback to 0
-        acc.premiumActual += Number(report.premiumActual) || 0
-        acc.salesCounselorActual += Number(report.salesCounselorActual) || 0
-        acc.policySoldActual += Number(report.policySoldActual) || 0
-        acc.agencyCoopActual += Number(report.agencyCoopActual) || 0
-        acc.premiumTarget += Number(report.premiumTarget) || 0
-        acc.salesCounselorTarget += Number(report.salesCounselorTarget) || 0
-        acc.policySoldTarget += Number(report.policySoldTarget) || 0
-        acc.agencyCoopTarget += Number(report.agencyCoopTarget) || 0
-        return acc
-      },
-      {
-        premiumActual: 0,
-        premiumTarget: 0,
-        salesCounselorActual: 0,
-        salesCounselorTarget: 0,
-        policySoldActual: 0,
-        policySoldTarget: 0,
-        agencyCoopActual: 0,
-        agencyCoopTarget: 0,
-      },
-    )
+    const repGroups = new Map<number, MergedReport[]>()
+    reports.forEach((report) => {
+      const repId = Number(report.salesRepId)
+      if (!repGroups.has(repId)) {
+        repGroups.set(repId, [])
+      }
+      repGroups.get(repId)!.push(report)
+    })
+
+    const totals = {
+      premiumActual: 0,
+      premiumTarget: 0,
+      salesCounselorActual: 0,
+      salesCounselorTarget: 0,
+      policySoldActual: 0,
+      policySoldTarget: 0,
+      agencyCoopActual: 0,
+      agencyCoopTarget: 0,
+    }
+
+    repGroups.forEach((repReports, repId) => {
+      // Sum actuals for this rep
+      const repActuals = repReports.reduce(
+        (acc, report) => {
+          acc.premiumActual += Number(report.premiumActual) || 0
+          acc.salesCounselorActual += Number(report.salesCounselorActual) || 0
+          acc.policySoldActual += Number(report.policySoldActual) || 0
+          acc.agencyCoopActual += Number(report.agencyCoopActual) || 0
+          return acc
+        },
+        {
+          premiumActual: 0,
+          salesCounselorActual: 0,
+          policySoldActual: 0,
+          agencyCoopActual: 0,
+        },
+      )
+
+      // Calculate targets once per rep based on granularity
+      const firstReport = repReports[0]
+      const annualPremiumTarget = (firstReport as any)._annualPremiumTarget || 0
+      const annualSalesCounselorTarget = (firstReport as any)._annualSalesCounselorTarget || 0
+      const annualPolicySoldTarget = (firstReport as any)._annualPolicySoldTarget || 0
+      const annualAgencyCoopTarget = (firstReport as any)._annualAgencyCoopTarget || 0
+
+      let repTargets = {
+        premiumTarget: annualPremiumTarget,
+        salesCounselorTarget: annualSalesCounselorTarget,
+        policySoldTarget: annualPolicySoldTarget,
+        agencyCoopTarget: annualAgencyCoopTarget,
+      }
+
+      // Apply time-based scaling if granularity is set
+      if (currentFilters.granularity === "monthly") {
+        repTargets = {
+          premiumTarget: Math.round((annualPremiumTarget / 12) * 100) / 100,
+          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * 100) / 100,
+          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * 100) / 100,
+          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * 100) / 100,
+        }
+      } else if (currentFilters.granularity === "weekly") {
+        repTargets = {
+          premiumTarget: Math.round((annualPremiumTarget / 48) * 100) / 100,
+          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 48) * 100) / 100,
+          policySoldTarget: Math.round((annualPolicySoldTarget / 48) * 100) / 100,
+          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 48) * 100) / 100,
+        }
+      }
+
+      // Add to totals
+      totals.premiumActual += repActuals.premiumActual
+      totals.salesCounselorActual += repActuals.salesCounselorActual
+      totals.policySoldActual += repActuals.policySoldActual
+      totals.agencyCoopActual += repActuals.agencyCoopActual
+      totals.premiumTarget += repTargets.premiumTarget
+      totals.salesCounselorTarget += repTargets.salesCounselorTarget
+      totals.policySoldTarget += repTargets.policySoldTarget
+      totals.agencyCoopTarget += repTargets.agencyCoopTarget
+    })
 
     const calculateAchievement = (actual: number, target: number): number => {
       return target > 0 ? Math.round((actual / target) * 100 * 100) / 100 : 0 // Round to 2 decimals
@@ -351,6 +410,7 @@ export default function HomePage() {
               console.debug(`[v0] Missing salesTarget for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
             }
 
+            // Set targets to 0 for individual reports to prevent multiplication
             const mergedReport = {
               ...report,
               areaId: Number(user?.areaId) || 0,
@@ -360,11 +420,16 @@ export default function HomePage() {
               regionName: region?.regionName || "Unknown",
               salesTypeName: salesType?.salesTypeName || "Unknown",
               userName: user?.name || "Unknown",
-              // Keep actual values from report, set targets to 0 if missing (don't zero out actuals)
-              premiumTarget: Number(target?.premiumTarget) || 0,
-              salesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
-              policySoldTarget: Number(target?.policySoldTarget) || 0,
-              agencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
+              // Set targets to 0 for individual reports to prevent multiplication
+              premiumTarget: 0,
+              salesCounselorTarget: 0,
+              policySoldTarget: 0,
+              agencyCoopTarget: 0,
+              // Store annual targets for later calculation
+              _annualPremiumTarget: Number(target?.premiumTarget) || 0,
+              _annualSalesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
+              _annualPolicySoldTarget: Number(target?.policySoldTarget) || 0,
+              _annualAgencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
             }
 
             if (report.salesRepId === 105) {
