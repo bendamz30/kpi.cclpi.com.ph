@@ -259,19 +259,6 @@ async function main() {
         reportsWithoutTargets++
       }
 
-      const filterContext = {
-        granularity: options.group || "monthly",
-        startDate: options.start,
-        endDate: options.end,
-      }
-
-      const dynamicPremiumTarget = target ? calculateTarget(safeNumber(target.premiumTarget), filterContext) : 0
-      const dynamicSalesCounselorTarget = target
-        ? calculateTarget(safeNumber(target.salesCounselorTarget), filterContext)
-        : 0
-      const dynamicPolicySoldTarget = target ? calculateTarget(safeNumber(target.policySoldTarget), filterContext) : 0
-      const dynamicAgencyCoopTarget = target ? calculateTarget(safeNumber(target.agencyCoopTarget), filterContext) : 0
-
       const mergedReport = {
         // Report fields
         reportId: report.reportId,
@@ -289,28 +276,27 @@ async function main() {
         userEmail: enrichedUserData ? enrichedUserData.email : null,
         userId: salesRep.userId,
 
+        // Actuals only (no target calculations here!)
         premiumActual: safeNumber(report.premiumActual),
-        premiumTarget: dynamicPremiumTarget,
-        premiumAchievementPercent: calculatePercentage(safeNumber(report.premiumActual), dynamicPremiumTarget),
-        premiumVariance: calculateVariance(safeNumber(report.premiumActual), dynamicPremiumTarget),
-
         salesCounselorActual: safeNumber(report.salesCounselorActual),
-        salesCounselorTarget: dynamicSalesCounselorTarget,
-        salesCounselorAchievementPercent: calculatePercentage(
-          safeNumber(report.salesCounselorActual),
-          dynamicSalesCounselorTarget,
-        ),
-        salesCounselorVariance: calculateVariance(safeNumber(report.salesCounselorActual), dynamicSalesCounselorTarget),
-
         policySoldActual: safeNumber(report.policySoldActual),
-        policySoldTarget: dynamicPolicySoldTarget,
-        policySoldAchievementPercent: calculatePercentage(safeNumber(report.policySoldActual), dynamicPolicySoldTarget),
-        policySoldVariance: calculateVariance(safeNumber(report.policySoldActual), dynamicPolicySoldTarget),
-
         agencyCoopActual: safeNumber(report.agencyCoopActual),
-        agencyCoopTarget: dynamicAgencyCoopTarget,
-        agencyCoopAchievementPercent: calculatePercentage(safeNumber(report.agencyCoopActual), dynamicAgencyCoopTarget),
-        agencyCoopVariance: calculateVariance(safeNumber(report.agencyCoopActual), dynamicAgencyCoopTarget),
+
+        // Fill placeholders for targets (will be computed later in grouping)
+        premiumTarget: 0,
+        salesCounselorTarget: 0,
+        policySoldTarget: 0,
+        agencyCoopTarget: 0,
+
+        premiumAchievementPercent: 0,
+        salesCounselorAchievementPercent: 0,
+        policySoldAchievementPercent: 0,
+        agencyCoopAchievementPercent: 0,
+
+        premiumVariance: 0,
+        salesCounselorVariance: 0,
+        policySoldVariance: 0,
+        agencyCoopVariance: 0,
 
         // Metadata
         createdAt: report.createdAt,
@@ -382,26 +368,25 @@ async function main() {
       }
 
       if (annualTarget) {
-        if (options.group === "monthly") {
-          groupTargets = {
-            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 12) * 100) / 100,
-            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 12) * 100) / 100,
-            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 12) * 100) / 100,
-            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 12) * 100) / 100,
-          }
-        } else if (options.group === "weekly") {
-          groupTargets = {
-            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 52) * 100) / 100,
-            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 52) * 100) / 100,
-            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 52) * 100) / 100,
-            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 52) * 100) / 100,
-          }
+        const filterContext = {
+          granularity: options.group || "monthly",
+          startDate: options.start,
+          endDate: options.end,
+        }
+
+        groupTargets = {
+          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), filterContext),
+          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), filterContext),
+          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), filterContext),
+          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), filterContext),
         }
       }
 
       return {
         ...group,
+        // Targets (calculated once per sales rep for the selected range)
         ...groupTargets,
+        // KPI calculations
         premiumAchievementPercent: calculatePercentage(group.premiumActual, groupTargets.premiumTarget),
         premiumVariance: calculateVariance(group.premiumActual, groupTargets.premiumTarget),
         salesCounselorAchievementPercent: calculatePercentage(
