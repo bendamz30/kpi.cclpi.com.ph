@@ -382,20 +382,17 @@ async function main() {
       }
 
       if (annualTarget) {
-        if (options.group === "monthly") {
-          groupTargets = {
-            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 12) * 100) / 100,
-            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 12) * 100) / 100,
-            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 12) * 100) / 100,
-            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 12) * 100) / 100,
-          }
-        } else if (options.group === "weekly") {
-          groupTargets = {
-            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 52) * 100) / 100,
-            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 52) * 100) / 100,
-            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 52) * 100) / 100,
-            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 52) * 100) / 100,
-          }
+        const filterContext = {
+          granularity: options.group,
+          startDate: options.start,
+          endDate: options.end,
+        }
+
+        groupTargets = {
+          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), filterContext),
+          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), filterContext),
+          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), filterContext),
+          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), filterContext),
         }
       }
 
