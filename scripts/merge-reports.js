@@ -123,6 +123,68 @@ function getPeriodKey(dateString, groupBy) {
   }
 }
 
+/**
+ * Calculate target based on annual target and filter context
+ * @param {number} annualTarget - The annual target value
+ * @param {Object} filterContext - Contains granularity and date range info
+ * @param {string} filterContext.granularity - 'monthly', 'weekly', or 'annual'
+ * @param {string} filterContext.startDate - Start date (optional)
+ * @param {string} filterContext.endDate - End date (optional)
+ * @returns {number} Adjusted target value
+ */
+function calculateTarget(annualTarget, filterContext) {
+  if (!annualTarget || annualTarget === 0) return 0
+
+  const { granularity = "monthly", startDate, endDate } = filterContext
+
+  // If annual granularity, return full annual target
+  if (granularity === "annual") {
+    return annualTarget
+  }
+
+  // Calculate date range if provided
+  let periodMultiplier = 1
+
+  if (startDate && endDate) {
+    try {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      const diffTime = Math.abs(end - start)
+
+      if (granularity === "monthly") {
+        // Calculate number of months in range
+        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44)) // Average days per month
+        periodMultiplier = Math.max(1, diffMonths)
+      } else if (granularity === "weekly") {
+        // Calculate number of weeks in range
+        const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7))
+        periodMultiplier = Math.max(1, diffWeeks)
+      }
+    } catch (error) {
+      console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
+      periodMultiplier = 1
+    }
+  } else {
+    // Default to full period if no date range specified
+    if (granularity === "monthly") {
+      periodMultiplier = 12 // Full year
+    } else if (granularity === "weekly") {
+      periodMultiplier = 52 // Full year
+    }
+  }
+
+  // Calculate per-period target and multiply by period count
+  if (granularity === "monthly") {
+    const monthlyTarget = annualTarget / 12
+    return Math.round(monthlyTarget * periodMultiplier * 100) / 100 // Round to 2 decimals
+  } else if (granularity === "weekly") {
+    const weeklyTarget = annualTarget / 52
+    return Math.round(weeklyTarget * periodMultiplier * 100) / 100 // Round to 2 decimals
+  }
+
+  return annualTarget
+}
+
 async function main() {
   console.log("🚀 Starting merge reports process...\n")
 
@@ -216,6 +278,23 @@ async function main() {
         reportsWithoutTargets++
       }
 
+      const filterContext = {
+        granularity: options.group || "monthly",
+        startDate: options.start,
+        endDate: options.end,
+      }
+
+      const dynamicPremiumTarget = target ? calculateTarget(safeNumber(target.premiumTarget), filterContext) : null
+      const dynamicSalesCounselorTarget = target
+        ? calculateTarget(safeNumber(target.salesCounselorTarget), filterContext)
+        : null
+      const dynamicPolicySoldTarget = target
+        ? calculateTarget(safeNumber(target.policySoldTarget), filterContext)
+        : null
+      const dynamicAgencyCoopTarget = target
+        ? calculateTarget(safeNumber(target.agencyCoopTarget), filterContext)
+        : null
+
       const mergedReport = {
         // Report fields
         reportId: report.reportId,
@@ -233,53 +312,28 @@ async function main() {
         userEmail: enrichedUserData ? enrichedUserData.email : null,
         userId: salesRep.userId,
 
-        // Premium metrics
         premiumActual: safeNumber(report.premiumActual),
-        premiumTarget: target ? safeNumber(target.premiumTarget) : null,
-        premiumAchievementPercent: calculatePercentage(
-          safeNumber(report.premiumActual),
-          target ? safeNumber(target.premiumTarget) : null,
-        ),
-        premiumVariance: calculateVariance(
-          safeNumber(report.premiumActual),
-          target ? safeNumber(target.premiumTarget) : null,
-        ),
+        premiumTarget: dynamicPremiumTarget,
+        premiumAchievementPercent: calculatePercentage(safeNumber(report.premiumActual), dynamicPremiumTarget),
+        premiumVariance: calculateVariance(safeNumber(report.premiumActual), dynamicPremiumTarget),
 
-        // Sales Counselor metrics
         salesCounselorActual: safeNumber(report.salesCounselorActual),
-        salesCounselorTarget: target ? safeNumber(target.salesCounselorTarget) : null,
+        salesCounselorTarget: dynamicSalesCounselorTarget,
         salesCounselorAchievementPercent: calculatePercentage(
           safeNumber(report.salesCounselorActual),
-          target ? safeNumber(target.salesCounselorTarget) : null,
+          dynamicSalesCounselorTarget,
         ),
-        salesCounselorVariance: calculateVariance(
-          safeNumber(report.salesCounselorActual),
-          target ? safeNumber(target.salesCounselorTarget) : null,
-        ),
+        salesCounselorVariance: calculateVariance(safeNumber(report.salesCounselorActual), dynamicSalesCounselorTarget),
 
-        // Policy Sold metrics
         policySoldActual: safeNumber(report.policySoldActual),
-        policySoldTarget: target ? safeNumber(target.policySoldTarget) : null,
-        policySoldAchievementPercent: calculatePercentage(
-          safeNumber(report.policySoldActual),
-          target ? safeNumber(target.policySoldTarget) : null,
-        ),
-        policySoldVariance: calculateVariance(
-          safeNumber(report.policySoldActual),
-          target ? safeNumber(target.policySoldTarget) : null,
-        ),
+        policySoldTarget: dynamicPolicySoldTarget,
+        policySoldAchievementPercent: calculatePercentage(safeNumber(report.policySoldActual), dynamicPolicySoldTarget),
+        policySoldVariance: calculateVariance(safeNumber(report.policySoldActual), dynamicPolicySoldTarget),
 
-        // Agency Coop metrics
         agencyCoopActual: safeNumber(report.agencyCoopActual),
-        agencyCoopTarget: target ? safeNumber(target.agencyCoopTarget) : null,
-        agencyCoopAchievementPercent: calculatePercentage(
-          safeNumber(report.agencyCoopActual),
-          target ? safeNumber(target.agencyCoopTarget) : null,
-        ),
-        agencyCoopVariance: calculateVariance(
-          safeNumber(report.agencyCoopActual),
-          target ? safeNumber(target.agencyCoopTarget) : null,
-        ),
+        agencyCoopTarget: dynamicAgencyCoopTarget,
+        agencyCoopAchievementPercent: calculatePercentage(safeNumber(report.agencyCoopActual), dynamicAgencyCoopTarget),
+        agencyCoopVariance: calculateVariance(safeNumber(report.agencyCoopActual), dynamicAgencyCoopTarget),
 
         // Metadata
         createdAt: report.createdAt,
