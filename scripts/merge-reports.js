@@ -368,13 +368,9 @@ async function main() {
           salesTypeId: report.salesTypeId,
           salesTypeName: report.salesTypeName,
           premiumActual: 0,
-          premiumTarget: 0,
           salesCounselorActual: 0,
-          salesCounselorTarget: 0,
           policySoldActual: 0,
-          policySoldTarget: 0,
           agencyCoopActual: 0,
-          agencyCoopTarget: 0,
           reportCount: 0,
           targetExists: false,
         })
@@ -384,13 +380,9 @@ async function main() {
 
       // Sum actuals and targets
       group.premiumActual += report.premiumActual || 0
-      group.premiumTarget += report.premiumTarget || 0
       group.salesCounselorActual += report.salesCounselorActual || 0
-      group.salesCounselorTarget += report.salesCounselorTarget || 0
       group.policySoldActual += report.policySoldActual || 0
-      group.policySoldTarget += report.policySoldTarget || 0
       group.agencyCoopActual += report.agencyCoopActual || 0
-      group.agencyCoopTarget += report.agencyCoopTarget || 0
       group.reportCount++
 
       if (report.targetExists) {
@@ -398,18 +390,71 @@ async function main() {
       }
     })
 
-    // Calculate percentages and variances for grouped data
-    mergedReports = Array.from(grouped.values()).map((group) => ({
-      ...group,
-      premiumAchievementPercent: calculatePercentage(group.premiumActual, group.premiumTarget),
-      premiumVariance: calculateVariance(group.premiumActual, group.premiumTarget),
-      salesCounselorAchievementPercent: calculatePercentage(group.salesCounselorActual, group.salesCounselorTarget),
-      salesCounselorVariance: calculateVariance(group.salesCounselorActual, group.salesCounselorTarget),
-      policySoldAchievementPercent: calculatePercentage(group.policySoldActual, group.policySoldTarget),
-      policySoldVariance: calculateVariance(group.policySoldActual, group.policySoldTarget),
-      agencyCoopAchievementPercent: calculatePercentage(group.agencyCoopActual, group.agencyCoopTarget),
-      agencyCoopVariance: calculateVariance(group.agencyCoopActual, group.agencyCoopTarget),
-    }))
+    mergedReports = Array.from(grouped.values()).map((group) => {
+      // Find the annual target for this sales rep
+      const reportYear = extractYear(
+        mergedReports.find((r) => getPeriodKey(r.reportDate, options.group) === group.period)?.reportDate,
+      )
+      const targetKey = `${group.salesRepId}-${reportYear}`
+      const annualTarget = targetsMap.get(targetKey)
+
+      let groupTargets = {
+        premiumTarget: 0,
+        salesCounselorTarget: 0,
+        policySoldTarget: 0,
+        agencyCoopTarget: 0,
+      }
+
+      if (annualTarget) {
+        // Calculate date range for this specific group period
+        let groupStartDate, groupEndDate
+
+        if (options.group === "monthly") {
+          const [year, month] = group.period.split("-")
+          groupStartDate = `${year}-${month}-01`
+          const lastDay = new Date(Number.parseInt(year), Number.parseInt(month), 0).getDate()
+          groupEndDate = `${year}-${month}-${lastDay}`
+        } else if (options.group === "weekly") {
+          // For weekly, approximate the week dates
+          const [year, week] = group.period.split("-W")
+          const weekNum = Number.parseInt(week)
+          const startOfYear = new Date(Number.parseInt(year), 0, 1)
+          const weekStart = new Date(startOfYear.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000)
+          const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+          groupStartDate = weekStart.toISOString().split("T")[0]
+          groupEndDate = weekEnd.toISOString().split("T")[0]
+        }
+
+        const groupFilterContext = {
+          granularity: options.group,
+          startDate: groupStartDate,
+          endDate: groupEndDate,
+        }
+
+        groupTargets = {
+          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), groupFilterContext),
+          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), groupFilterContext),
+          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), groupFilterContext),
+          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), groupFilterContext),
+        }
+      }
+
+      return {
+        ...group,
+        ...groupTargets,
+        premiumAchievementPercent: calculatePercentage(group.premiumActual, groupTargets.premiumTarget),
+        premiumVariance: calculateVariance(group.premiumActual, groupTargets.premiumTarget),
+        salesCounselorAchievementPercent: calculatePercentage(
+          group.salesCounselorActual,
+          groupTargets.salesCounselorTarget,
+        ),
+        salesCounselorVariance: calculateVariance(group.salesCounselorActual, groupTargets.salesCounselorTarget),
+        policySoldAchievementPercent: calculatePercentage(group.policySoldActual, groupTargets.policySoldTarget),
+        policySoldVariance: calculateVariance(group.policySoldActual, groupTargets.policySoldTarget),
+        agencyCoopAchievementPercent: calculatePercentage(group.agencyCoopActual, groupTargets.agencyCoopTarget),
+        agencyCoopVariance: calculateVariance(group.agencyCoopActual, groupTargets.agencyCoopTarget),
+      }
+    })
   }
 
   // Save merged reports to file
