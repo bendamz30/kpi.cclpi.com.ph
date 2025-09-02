@@ -118,10 +118,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">{percentage.toFixed(1)}% Complete</span>
+                <span className="text-gray-500">{percentage.toFixed(2)}%</span>
                 <span className={`font-medium ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
                   {isPositive ? "+" : ""}
-                  {variance.toFixed(1)}%
+                  {variance.toFixed(2)}%
                 </span>
               </div>
             </div>
