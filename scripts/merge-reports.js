@@ -137,51 +137,32 @@ function calculateTarget(annualTarget, filterContext) {
 
   const { granularity = "monthly", startDate, endDate } = filterContext
 
-  // If annual granularity, return full annual target
-  if (granularity === "annual") {
+  if (!startDate || !endDate) {
     return annualTarget
   }
 
-  // Calculate date range if provided
-  let periodMultiplier = 1
+  try {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const diffTime = Math.abs(end - start)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Include both start and end dates
 
-  if (startDate && endDate) {
-    try {
-      const start = new Date(startDate)
-      const end = new Date(endDate)
-      const diffTime = Math.abs(end - start)
-
-      if (granularity === "monthly") {
-        // Calculate number of months in range
-        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44)) // Average days per month
-        periodMultiplier = Math.max(1, diffMonths)
-      } else if (granularity === "weekly") {
-        // Calculate number of weeks in range
-        const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7))
-        periodMultiplier = Math.max(1, diffWeeks)
-      }
-    } catch (error) {
-      console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
-      periodMultiplier = 1
-    }
-  } else {
-    // Default to full period if no date range specified
     if (granularity === "monthly") {
-      periodMultiplier = 12 // Full year
+      // Calculate number of months more accurately
+      const diffMonths = Math.ceil(diffDays / 30.44) // Average days per month
+      const monthlyTarget = annualTarget / 12
+      return Math.round(monthlyTarget * diffMonths * 100) / 100
     } else if (granularity === "weekly") {
-      periodMultiplier = 52 // Full year
+      // Calculate number of weeks
+      const diffWeeks = Math.ceil(diffDays / 7)
+      const weeklyTarget = annualTarget / 52
+      return Math.round(weeklyTarget * diffWeeks * 100) / 100
     }
+  } catch (error) {
+    console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
   }
 
-  // Calculate per-period target and multiply by period count
-  if (granularity === "monthly") {
-    const monthlyTarget = annualTarget / 12
-    return Math.round(monthlyTarget * periodMultiplier * 100) / 100 // Round to 2 decimals
-  } else if (granularity === "weekly") {
-    const weeklyTarget = annualTarget / 52
-    return Math.round(weeklyTarget * periodMultiplier * 100) / 100 // Round to 2 decimals
-  }
-
+  // Default to annual target if calculation fails
   return annualTarget
 }
 
@@ -284,16 +265,12 @@ async function main() {
         endDate: options.end,
       }
 
-      const dynamicPremiumTarget = target ? calculateTarget(safeNumber(target.premiumTarget), filterContext) : null
+      const dynamicPremiumTarget = target ? calculateTarget(safeNumber(target.premiumTarget), filterContext) : 0
       const dynamicSalesCounselorTarget = target
         ? calculateTarget(safeNumber(target.salesCounselorTarget), filterContext)
-        : null
-      const dynamicPolicySoldTarget = target
-        ? calculateTarget(safeNumber(target.policySoldTarget), filterContext)
-        : null
-      const dynamicAgencyCoopTarget = target
-        ? calculateTarget(safeNumber(target.agencyCoopTarget), filterContext)
-        : null
+        : 0
+      const dynamicPolicySoldTarget = target ? calculateTarget(safeNumber(target.policySoldTarget), filterContext) : 0
+      const dynamicAgencyCoopTarget = target ? calculateTarget(safeNumber(target.agencyCoopTarget), filterContext) : 0
 
       const mergedReport = {
         // Report fields
@@ -378,7 +355,7 @@ async function main() {
 
       const group = grouped.get(periodKey)
 
-      // Sum actuals and targets
+      // Sum actuals only
       group.premiumActual += report.premiumActual || 0
       group.salesCounselorActual += report.salesCounselorActual || 0
       group.policySoldActual += report.policySoldActual || 0
@@ -392,9 +369,8 @@ async function main() {
 
     mergedReports = Array.from(grouped.values()).map((group) => {
       // Find the annual target for this sales rep
-      const reportYear = extractYear(
-        mergedReports.find((r) => getPeriodKey(r.reportDate, options.group) === group.period)?.reportDate,
-      )
+      const sampleReport = mergedReports.find((r) => getPeriodKey(r.reportDate, options.group) === group.period)
+      const reportYear = extractYear(sampleReport?.reportDate)
       const targetKey = `${group.salesRepId}-${reportYear}`
       const annualTarget = targetsMap.get(targetKey)
 
@@ -406,36 +382,20 @@ async function main() {
       }
 
       if (annualTarget) {
-        // Calculate date range for this specific group period
-        let groupStartDate, groupEndDate
-
         if (options.group === "monthly") {
-          const [year, month] = group.period.split("-")
-          groupStartDate = `${year}-${month}-01`
-          const lastDay = new Date(Number.parseInt(year), Number.parseInt(month), 0).getDate()
-          groupEndDate = `${year}-${month}-${lastDay}`
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 12) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 12) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 12) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 12) * 100) / 100,
+          }
         } else if (options.group === "weekly") {
-          // For weekly, approximate the week dates
-          const [year, week] = group.period.split("-W")
-          const weekNum = Number.parseInt(week)
-          const startOfYear = new Date(Number.parseInt(year), 0, 1)
-          const weekStart = new Date(startOfYear.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000)
-          const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-          groupStartDate = weekStart.toISOString().split("T")[0]
-          groupEndDate = weekEnd.toISOString().split("T")[0]
-        }
-
-        const groupFilterContext = {
-          granularity: options.group,
-          startDate: groupStartDate,
-          endDate: groupEndDate,
-        }
-
-        groupTargets = {
-          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), groupFilterContext),
-          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), groupFilterContext),
-          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), groupFilterContext),
-          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), groupFilterContext),
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 52) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 52) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 52) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 52) * 100) / 100,
+          }
         }
       }
 
