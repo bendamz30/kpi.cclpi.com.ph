@@ -107,36 +107,48 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
         const isPositive = variance >= 0
 
         return (
-          <div key={item.title} className="bg-white rounded-lg border p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">{item.title}</h3>
+          <div key={item.title} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base font-medium text-gray-700">{item.title}</h3>
               <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-gray-900">{item.format(item.actual)}</span>
-                <span className="text-sm text-gray-500">/ {item.format(item.target)}</span>
+            <div className="mb-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-gray-900">{item.format(item.actual)}</span>
+                <span className="text-lg text-gray-400">/ {item.format(item.target)}</span>
               </div>
+            </div>
 
-              <div className="text-xs text-gray-500 mb-1">Progress</div>
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-gray-600">Progress</div>
 
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-100 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${item.color}`}
                   style={{ width: `${percentage}%` }}
                 ></div>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">{percentage.toFixed(2)}%</span>
-                <span className={`font-medium ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{percentage.toFixed(2)}%</span>
+                <span className={`text-sm font-medium ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
                   {isPositive ? "+" : ""}
                   {variance.toFixed(2)}%
                 </span>
               </div>
 
-              <div className="text-xs text-gray-600 mt-2">Variance = {formatVarianceNumber(absoluteVariance)}</div>
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-sm font-medium text-gray-600">Variance</span>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    isPositive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {isPositive ? "+" : ""}
+                  {formatVarianceNumber(absoluteVariance)}
+                </span>
+              </div>
             </div>
           </div>
         )
