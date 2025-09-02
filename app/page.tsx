@@ -8,6 +8,7 @@ import { SalesRepsTable } from "@/components/dashboard/sales-reps-table"
 import { UsersTable } from "@/components/dashboard/users-table"
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters"
 import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboard-kpi-cards"
+import { SalesPerformanceChart } from "@/components/dashboard/sales-performance-chart"
 import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
 import type { User } from "@/lib/mock-data"
 
@@ -570,6 +571,12 @@ export default function HomePage() {
             </div>
             <DashboardFilters onFiltersChange={handleFiltersChange} />
             <DashboardKPICards data={kpiData} loading={loading} />
+            <SalesPerformanceChart
+              reports={mergedReports}
+              selectedSalesOfficer={currentFilters.salesRepId}
+              startDate={currentFilters.startDate}
+              endDate={currentFilters.endDate}
+            />
           </div>
         )
       case "sales-reps":
