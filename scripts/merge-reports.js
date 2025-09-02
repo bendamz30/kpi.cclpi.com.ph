@@ -1,187 +1,246 @@
 #!/usr/bin/env node
+
 const fs = require("fs")
 const path = require("path")
 
-// ---------------- Helpers ----------------
-function readJson(filename) {
+// ==================== CLI ARGUMENTS ====================
+const args = process.argv.slice(2)
+const options = { group: null, start: null, end: null }
+
+args.forEach((arg) => {
+  if (arg.startsWith("--group=")) options.group = arg.split("=")[1]
+  else if (arg.startsWith("--start=")) options.start = arg.split("=")[1]
+  else if (arg.startsWith("--end=")) options.end = arg.split("=")[1]
+})
+
+// ==================== HELPERS ====================
+function readJsonFile(filename) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", filename), "utf8"))
 }
-function safeNumber(v, d = 0) {
-  const n = Number.parseFloat(v)
-  return isNaN(n) ? d : n
+
+function safeNumber(value) {
+  const n = Number.parseFloat(value)
+  return isNaN(n) ? 0 : n
 }
-function pct(actual, target) {
-  if (!target) return 0
-  return Math.round((actual / target) * 10000) / 100
+
+function calculatePercentage(actual, target) {
+  if (!target) return null
+  return Math.round((actual / target) * 100 * 100) / 100
 }
-function variance(actual, target) {
+
+function calculateVariance(actual, target) {
+  if (!target) return null
   return actual - target
 }
-function extractYear(dateStr) {
-  return new Date(dateStr).getFullYear()
+
+function extractYear(dateString) {
+  return new Date(dateString).getFullYear()
 }
-function inRange(dateStr, start, end) {
-  if (!start && !end) return true
-  const d = new Date(dateStr)
-  if (start && d < new Date(start)) return false
-  if (end && d > new Date(end)) return false
+
+function isDateInRange(dateString, startDate, endDate) {
+  const date = new Date(dateString)
+  if (startDate && date < new Date(startDate)) return false
+  if (endDate && date > new Date(endDate)) return false
   return true
 }
-function getPeriodKey(dateStr, group) {
-  const d = new Date(dateStr)
-  const y = d.getFullYear()
-  if (group === "monthly") {
-    return `${y}-${String(d.getMonth() + 1).padStart(2, "0")}`
-  }
-  if (group === "weekly") {
-    const start = new Date(y, 0, 1)
-    const diff = (d - start) / 86400000
-    const week = Math.ceil((diff + start.getDay() + 1) / 7)
-    return `${y}-W${String(week).padStart(2, "0")}`
-  }
-  if (group === "daily") {
-    return d.toISOString().split("T")[0]
-  }
-  return d.toISOString().split("T")[0]
-}
-function calcTarget(annual, start, end, mode) {
-  if (!annual) return 0
 
-  if (mode === "monthly") {
-    return Math.round((annual / 12) * 100) / 100
-  }
-  if (mode === "weekly") {
-    return Math.round((annual / 48) * 100) / 100
-  }
-  if (mode === "daily") {
-    return Math.round((annual / 365) * 100) / 100
-  }
+function getPeriodKey(dateString, groupBy) {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
 
-  return annual // default annual target
+  if (groupBy === "monthly") {
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    return `${year}-${month}`
+  }
+  if (groupBy === "weekly") {
+    const startOfYear = new Date(year, 0, 1)
+    const pastDaysOfYear = (date - startOfYear) / 86400000
+    const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7)
+    return `${year}-W${String(weekNumber).padStart(2, "0")}`
+  }
+  return dateString
 }
 
-// ---------------- Main ----------------
+// ==================== MAIN ====================
 async function main() {
-  const args = process.argv.slice(2)
-  const opts = { group: null, start: null, end: null }
-  args.forEach((a) => {
-    if (a.startsWith("--group=")) opts.group = a.split("=")[1]
-    if (a.startsWith("--start=")) opts.start = a.split("=")[1]
-    if (a.startsWith("--end=")) opts.end = a.split("=")[1]
-  })
+  console.log("🚀 Starting merge reports...")
 
-  // Load JSON
-  const users = readJson("users.json")
-  const reps = readJson("salesRepresentatives.json")
-  const reports = readJson("salesReports.json")
-  const targets = readJson("salesTargets.json")
-  const types = readJson("salesTypes.json")
-  const areas = readJson("areas.json")
-  const regions = readJson("regions.json")
+  // Load data
+  const users = readJsonFile("users.json")
+  const salesReports = readJsonFile("salesReports.json")
+  const salesTargets = readJsonFile("salesTargets.json")
+  const salesReps = readJsonFile("salesRepresentatives.json")
+  const salesTypes = readJsonFile("salesTypes.json")
+  const areas = readJsonFile("areas.json")
+  const regions = readJsonFile("regions.json")
 
   // Maps
   const userMap = new Map(users.map((u) => [u.userId, u]))
-  const repMap = new Map(reps.map((r) => [r.salesRepId, r]))
-  const typeMap = new Map(types.map((t) => [t.salesTypeId, t.salesTypeName]))
+  const repMap = new Map(salesReps.map((r) => [r.salesRepId, r]))
+  const typeMap = new Map(salesTypes.map((t) => [t.salesTypeId, t.salesTypeName]))
   const areaMap = new Map(areas.map((a) => [a.areaId, a.areaName]))
   const regionMap = new Map(regions.map((r) => [r.regionId, r.regionName]))
-  const targetMap = new Map(targets.map((t) => [`${t.salesRepId}-${t.year}`, t]))
 
-  // Merge reports
-  let merged = []
-  for (const r of reports) {
-    if (!inRange(r.reportDate, opts.start, opts.end)) continue
-    const rep = repMap.get(r.salesRepId)
-    if (!rep) continue
-    const user = rep.userId ? userMap.get(rep.userId) : null
-    const year = extractYear(r.reportDate)
-    const target = targetMap.get(`${r.salesRepId}-${year}`)
+  // Targets map
+  const targetMap = new Map()
+  salesTargets.forEach((t) => {
+    targetMap.set(`${t.salesRepId}-${t.year}`, t)
+  })
 
-    merged.push({
-      reportId: r.reportId,
-      period: opts.group ? getPeriodKey(r.reportDate, opts.group) : r.reportDate,
-      reportDate: r.reportDate,
-      salesRepId: r.salesRepId,
-      salesRepName: user?.name || rep.name,
-      userEmail: user?.email || null,
-      areaId: rep.areaId,
-      areaName: areaMap.get(rep.areaId) || null,
-      regionId: rep.regionId,
-      regionName: regionMap.get(rep.regionId) || null,
-      salesTypeId: rep.salesTypeId,
-      salesTypeName: typeMap.get(rep.salesTypeId) || null,
-      premiumActual: safeNumber(r.premiumActual),
-      salesCounselorActual: safeNumber(r.salesCounselorActual),
-      policySoldActual: safeNumber(r.policySoldActual),
-      agencyCoopActual: safeNumber(r.agencyCoopActual),
-      target: target || null,
+  // Step 1: Enrich reports (NO TARGETS YET)
+  const enrichedReports = salesReports
+    .filter((r) => isDateInRange(r.reportDate, options.start, options.end))
+    .map((r) => {
+      const rep = repMap.get(r.salesRepId) || {}
+      const user = rep.userId ? userMap.get(rep.userId) : null
+      return {
+        reportId: r.reportId,
+        reportDate: r.reportDate,
+        salesRepId: r.salesRepId,
+        salesRepName: user?.name || rep.name || "Unknown",
+        areaId: rep.areaId,
+        areaName: areaMap.get(rep.areaId) || null,
+        regionId: rep.regionId,
+        regionName: regionMap.get(rep.regionId) || null,
+        salesTypeId: rep.salesTypeId,
+        salesTypeName: typeMap.get(rep.salesTypeId) || null,
+        premiumActual: safeNumber(r.premiumActual),
+        salesCounselorActual: safeNumber(r.salesCounselorActual),
+        policySoldActual: safeNumber(r.policySoldActual),
+        agencyCoopActual: safeNumber(r.agencyCoopActual),
+      }
     })
-  }
 
-  // Group if requested
-  if (opts.group) {
+  // Step 2: Group reports
+  let groupedReports
+  if (options.group === "monthly" || options.group === "weekly") {
     const grouped = new Map()
-    for (const r of merged) {
-      const key = `${r.salesRepId}-${r.period}`
+
+    enrichedReports.forEach((r) => {
+      const key = `${r.salesRepId}-${getPeriodKey(r.reportDate, options.group)}`
+
       if (!grouped.has(key)) {
         grouped.set(key, {
-          period: r.period,
+          period: getPeriodKey(r.reportDate, options.group),
           salesRepId: r.salesRepId,
           salesRepName: r.salesRepName,
+          areaId: r.areaId,
           areaName: r.areaName,
+          regionId: r.regionId,
           regionName: r.regionName,
+          salesTypeId: r.salesTypeId,
           salesTypeName: r.salesTypeName,
           premiumActual: 0,
           salesCounselorActual: 0,
           policySoldActual: 0,
           agencyCoopActual: 0,
-          target: r.target,
         })
       }
-      const g = grouped.get(key)
-      g.premiumActual += r.premiumActual
-      g.salesCounselorActual += r.salesCounselorActual
-      g.policySoldActual += r.policySoldActual
-      g.agencyCoopActual += r.agencyCoopActual
-    }
 
-    merged = Array.from(grouped.values()).map((g) => {
-      const tgt = g.target
-      let tPremium = 0,
-        tCounselor = 0,
-        tPolicy = 0,
-        tAgency = 0
-      if (tgt) {
-        tPremium = calcTarget(tgt.premiumTarget, opts.start, opts.end, opts.group)
-        tCounselor = calcTarget(tgt.salesCounselorTarget, opts.start, opts.end, opts.group)
-        tPolicy = calcTarget(tgt.policySoldTarget, opts.start, opts.end, opts.group)
-        tAgency = calcTarget(tgt.agencyCoopTarget, opts.start, opts.end, opts.group)
+      const group = grouped.get(key)
+      group.premiumActual += r.premiumActual
+      group.salesCounselorActual += r.salesCounselorActual
+      group.policySoldActual += r.policySoldActual
+      group.agencyCoopActual += r.agencyCoopActual
+    })
+
+    // Step 3: Add targets to grouped reports
+    groupedReports = Array.from(grouped.values()).map((g) => {
+      const year = extractYear(g.period)
+      const target = targetMap.get(`${g.salesRepId}-${year}`)
+
+      let premiumTarget = 0
+      let salesCounselorTarget = 0
+      let policySoldTarget = 0
+      let agencyCoopTarget = 0
+
+      if (target) {
+        if (options.group === "monthly") {
+          premiumTarget = Math.round((target.premiumTarget / 12) * 100) / 100
+          salesCounselorTarget = Math.round((target.salesCounselorTarget / 12) * 100) / 100
+          policySoldTarget = Math.round((target.policySoldTarget / 12) * 100) / 100
+          agencyCoopTarget = Math.round((target.agencyCoopTarget / 12) * 100) / 100
+        } else if (options.group === "weekly") {
+          premiumTarget = Math.round((target.premiumTarget / 48) * 100) / 100
+          salesCounselorTarget = Math.round((target.salesCounselorTarget / 48) * 100) / 100
+          policySoldTarget = Math.round((target.policySoldTarget / 48) * 100) / 100
+          agencyCoopTarget = Math.round((target.agencyCoopTarget / 48) * 100) / 100
+        }
+      } else {
+        console.warn(`⚠️ No target found for salesRepId ${g.salesRepId} in year ${year}`)
       }
+
       return {
         ...g,
-        premiumTarget: tPremium,
-        salesCounselorTarget: tCounselor,
-        policySoldTarget: tPolicy,
-        agencyCoopTarget: tAgency,
-        premiumAchievement: pct(g.premiumActual, tPremium),
-        counselorAchievement: pct(g.salesCounselorActual, tCounselor),
-        policyAchievement: pct(g.policySoldActual, tPolicy),
-        agencyAchievement: pct(g.agencyCoopActual, tAgency),
-        premiumVariance: variance(g.premiumActual, tPremium),
-        counselorVariance: variance(g.salesCounselorActual, tCounselor),
-        policyVariance: variance(g.policySoldActual, tPolicy),
-        agencyVariance: variance(g.agencyCoopActual, tAgency),
+        premiumTarget,
+        salesCounselorTarget,
+        policySoldTarget,
+        agencyCoopTarget,
+        premiumAchievement: calculatePercentage(g.premiumActual, premiumTarget),
+        counselorAchievement: calculatePercentage(g.salesCounselorActual, salesCounselorTarget),
+        policyAchievement: calculatePercentage(g.policySoldActual, policySoldTarget),
+        agencyAchievement: calculatePercentage(g.agencyCoopActual, agencyCoopTarget),
+        premiumVariance: calculateVariance(g.premiumActual, premiumTarget),
+        counselorVariance: calculateVariance(g.salesCounselorActual, salesCounselorTarget),
+        policyVariance: calculateVariance(g.policySoldActual, policySoldTarget),
+        agencyVariance: calculateVariance(g.agencyCoopActual, agencyCoopTarget),
+      }
+    })
+  } else {
+    // No grouping - individual reports with targets
+    groupedReports = enrichedReports.map((r) => {
+      const year = extractYear(r.reportDate)
+      const target = targetMap.get(`${r.salesRepId}-${year}`)
+
+      let premiumTarget = 0
+      let salesCounselorTarget = 0
+      let policySoldTarget = 0
+      let agencyCoopTarget = 0
+
+      if (target) {
+        premiumTarget = target.premiumTarget
+        salesCounselorTarget = target.salesCounselorTarget
+        policySoldTarget = target.policySoldTarget
+        agencyCoopTarget = target.agencyCoopTarget
+      } else {
+        console.warn(`⚠️ No target found for salesRepId ${r.salesRepId} in year ${year}`)
+      }
+
+      return {
+        ...r,
+        premiumTarget,
+        salesCounselorTarget,
+        policySoldTarget,
+        agencyCoopTarget,
+        premiumAchievement: calculatePercentage(r.premiumActual, premiumTarget),
+        counselorAchievement: calculatePercentage(r.salesCounselorActual, salesCounselorTarget),
+        policyAchievement: calculatePercentage(r.policySoldActual, policySoldTarget),
+        agencyAchievement: calculatePercentage(r.agencyCoopActual, agencyCoopTarget),
+        premiumVariance: calculateVariance(r.premiumActual, premiumTarget),
+        counselorVariance: calculateVariance(r.salesCounselorActual, salesCounselorTarget),
+        policyVariance: calculateVariance(r.policySoldActual, policySoldTarget),
+        agencyVariance: calculateVariance(r.agencyCoopActual, agencyCoopTarget),
       }
     })
   }
 
-  // Save
-  const out = path.join(__dirname, "..", "data", "mergedReports.json")
-  fs.writeFileSync(out, JSON.stringify(merged, null, 2))
-  console.log(`✅ Saved ${merged.length} merged reports to ${out}`)
+  // Step 4: Save merged reports
+  const outputPath = path.join(__dirname, "..", "data", "mergedReports.json")
+  fs.writeFileSync(outputPath, JSON.stringify(groupedReports, null, 2))
+
+  console.log(`✅ Successfully merged ${groupedReports.length} reports`)
+  console.log(`📁 Output saved to: ${outputPath}`)
+
+  if (options.group) {
+    console.log(`📊 Grouped by: ${options.group}`)
+  }
+  if (options.start || options.end) {
+    console.log(`📅 Date range: ${options.start || "start"} to ${options.end || "end"}`)
+  }
 }
 
-main().catch((err) => {
-  console.error("❌ Fatal error:", err)
+// Run the script
+main().catch((error) => {
+  console.error("❌ Error running merge reports:", error)
   process.exit(1)
 })
