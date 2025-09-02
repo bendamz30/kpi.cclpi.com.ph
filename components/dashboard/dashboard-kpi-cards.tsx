@@ -12,9 +12,12 @@ export interface KPIData {
 interface KPICardsProps {
   data: KPIData
   loading?: boolean
+  startDate?: string
+  endDate?: string
+  granularity?: string
 }
 
-export function DashboardKPICards({ data, loading }: KPICardsProps) {
+export function DashboardKPICards({ data, loading, startDate, endDate, granularity }: KPICardsProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -27,6 +30,35 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
         ))}
       </div>
     )
+  }
+
+  const calculateMonthsInRange = () => {
+    if (!startDate || !endDate) return 12 // Default to full year if no range specified
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    const yearDiff = end.getFullYear() - start.getFullYear()
+    const monthDiff = end.getMonth() - start.getMonth()
+
+    return Math.max(1, yearDiff * 12 + monthDiff + 1) // +1 to include both start and end months
+  }
+
+  const calculateBudget = (annualTarget: number) => {
+    if (!annualTarget) return 0
+
+    const monthsInRange = calculateMonthsInRange()
+
+    if (granularity === "Monthly") {
+      const monthlyTarget = annualTarget / 12
+      return monthlyTarget * monthsInRange
+    } else if (granularity === "Weekly") {
+      const weeklyTarget = annualTarget / 48
+      const weeksInRange = monthsInRange * 4 // Approximate weeks per month
+      return weeklyTarget * weeksInRange
+    }
+
+    return annualTarget // Default to annual target
   }
 
   const calculatePercentage = (actual: number, target: number) => {
@@ -64,6 +96,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Premium",
       actual: safeData.premiumActual,
       target: safeData.premiumTarget,
+      budget: calculateBudget(safeData.premiumTarget * 12), // Convert monthly target back to annual for calculation
       format: formatCurrency,
       color: "bg-blue-500",
     },
@@ -71,6 +104,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Sales Counselor",
       actual: safeData.salesCounselorActual,
       target: safeData.salesCounselorTarget,
+      budget: calculateBudget(safeData.salesCounselorTarget * 12),
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-emerald-500",
     },
@@ -78,6 +112,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Policy Sold",
       actual: safeData.policySoldActual,
       target: safeData.policySoldTarget,
+      budget: calculateBudget(safeData.policySoldTarget * 12),
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-amber-500",
     },
@@ -85,6 +120,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Agency Coop",
       actual: safeData.agencyCoopActual,
       target: safeData.agencyCoopTarget,
+      budget: calculateBudget(safeData.agencyCoopTarget * 12),
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-purple-500",
     },
@@ -109,6 +145,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
                 <span className="text-2xl font-bold text-gray-900">{item.format(item.actual)}</span>
                 <span className="text-sm text-gray-500">/ {item.format(item.target)}</span>
               </div>
+
+              <div className="text-xs text-gray-600">Budget: {item.format(item.budget)}</div>
 
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div

@@ -566,7 +566,13 @@ export default function HomePage() {
               </p>
             </div>
             <DashboardFilters onFiltersChange={handleFiltersChange} />
-            <DashboardKPICards data={kpiData} loading={loading} />
+            <DashboardKPICards
+              data={kpiData}
+              loading={loading}
+              startDate={currentFilters.startDate}
+              endDate={currentFilters.endDate}
+              granularity={currentFilters.granularity}
+            />
           </div>
         )
       case "sales-reps":
