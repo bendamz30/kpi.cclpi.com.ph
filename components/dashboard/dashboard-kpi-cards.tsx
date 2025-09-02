@@ -39,6 +39,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
     return ((actual - target) / target) * 100
   }
 
+  const calculateAbsoluteVariance = (actual: number, target: number) => {
+    return actual - target
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
@@ -46,6 +50,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
+  }
+
+  const formatVarianceNumber = (amount: number) => {
+    return new Intl.NumberFormat("en-US").format(amount)
   }
 
   const safeData = {
@@ -95,6 +103,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       {kpiItems.map((item) => {
         const percentage = calculatePercentage(item.actual, item.target)
         const variance = calculateVariance(item.actual, item.target)
+        const absoluteVariance = calculateAbsoluteVariance(item.actual, item.target)
         const isPositive = variance >= 0
 
         return (
@@ -110,6 +119,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
                 <span className="text-sm text-gray-500">/ {item.format(item.target)}</span>
               </div>
 
+              <div className="text-xs text-gray-500 mb-1">Progress</div>
+
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${item.color}`}
@@ -124,6 +135,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
                   {variance.toFixed(2)}%
                 </span>
               </div>
+
+              <div className="text-xs text-gray-600 mt-2">Variance = {formatVarianceNumber(absoluteVariance)}</div>
             </div>
           </div>
         )
