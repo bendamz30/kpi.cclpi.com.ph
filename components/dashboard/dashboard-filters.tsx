@@ -4,9 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Filter } from "lucide-react"
+import { Filter, RotateCcw } from "lucide-react"
 
 interface FilterProps {
   onFiltersChange: (filters: any) => void
@@ -167,129 +165,156 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
+  const handleReset = () => {
+    const resetFilters = {
+      salesType: "all",
+      area: "all",
+      region: "all",
+      salesOfficer: "all",
+      startDate: "",
+      endDate: "",
+    }
+    setFilters(resetFilters)
+  }
+
   const handleApplyFilter = () => {
     console.debug("[v0] applyFilters called with filters:", filters)
     onFiltersChange(filters)
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="salesType">Sales Type</Label>
-            <Select value={filters.salesType} onValueChange={(value) => handleFilterChange("salesType", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select sales type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {salesTypes.map((type) => (
-                  <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
-                    {type.salesTypeName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="area">Area</Label>
-            <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select area" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {areas.map((area) => (
-                  <SelectItem key={area.areaId} value={area.areaId.toString()}>
-                    {area.areaName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="region">Region</Label>
-            <Select
-              value={filters.region}
-              onValueChange={(value) => handleFilterChange("region", value)}
-              disabled={!filters.area || filters.area === "all"}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={filters.area && filters.area !== "all" ? "Select region" : "Select area first"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {filteredRegions.map((region) => (
-                  <SelectItem key={region.regionId} value={region.regionId.toString()}>
-                    {region.regionName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="salesOfficer">Sales Officer</Label>
-            <Select
-              value={filters.salesOfficer}
-              onValueChange={(value) => handleFilterChange("salesOfficer", value)}
-              disabled={filteredSalesOfficers.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={filteredSalesOfficers.length === 0 ? "No sales officers" : "Select sales officer"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {filteredSalesOfficers.length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    No sales officers available
-                  </SelectItem>
-                ) : (
-                  filteredSalesOfficers.map((officer) => (
-                    <SelectItem key={officer.userId} value={officer.userId.toString()}>
-                      {officer.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Sales Type</label>
+          <Select value={filters.salesType} onValueChange={(value) => handleFilterChange("salesType", value)}>
+            <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+              <SelectValue placeholder="Select sales type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {salesTypes.map((type) => (
+                <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
+                  {type.salesTypeName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Area</label>
+          <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)}>
+            <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+              <SelectValue placeholder="Select area" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {areas.map((area) => (
+                <SelectItem key={area.areaId} value={area.areaId.toString()}>
+                  {area.areaName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Region</label>
+          <Select
+            value={filters.region}
+            onValueChange={(value) => handleFilterChange("region", value)}
+            disabled={!filters.area || filters.area === "all"}
+          >
+            <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-50 disabled:text-gray-400">
+              <SelectValue
+                placeholder={filters.area && filters.area !== "all" ? "Select region" : "Select area first"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {filteredRegions.map((region) => (
+                <SelectItem key={region.regionId} value={region.regionId.toString()}>
+                  {region.regionName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Sales Officer</label>
+          <Select
+            value={filters.salesOfficer}
+            onValueChange={(value) => handleFilterChange("salesOfficer", value)}
+            disabled={filteredSalesOfficers.length === 0}
+          >
+            <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-50 disabled:text-gray-400">
+              <SelectValue
+                placeholder={filteredSalesOfficers.length === 0 ? "No sales officers" : "Select sales officer"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {filteredSalesOfficers.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No sales officers available
+                </SelectItem>
+              ) : (
+                filteredSalesOfficers.map((officer) => (
+                  <SelectItem key={officer.userId} value={officer.userId.toString()}>
+                    {officer.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="col-span-full mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date</Label>
+            <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Start Date</label>
             <Input
               id="startDate"
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange("startDate", e.target.value)}
+              className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endDate">End Date</Label>
+            <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">End Date</label>
             <Input
               id="endDate"
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange("endDate", e.target.value)}
+              className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
           </div>
         </div>
+      </div>
 
-        <Button onClick={handleApplyFilter} className="w-full md:w-auto">
+      <div className="flex justify-end gap-3">
+        <Button
+          onClick={handleReset}
+          variant="outline"
+          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 border-gray-300 transition-colors"
+        >
+          <RotateCcw className="w-4 h-4 mr-2" />
+          Reset
+        </Button>
+        <Button
+          onClick={handleApplyFilter}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors"
+        >
           <Filter className="w-4 h-4 mr-2" />
           Apply Filter
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
