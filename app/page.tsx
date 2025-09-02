@@ -216,6 +216,20 @@ export default function HomePage() {
       agencyCoopTarget: 0,
     }
 
+    let dateRangeMultiplier = 1
+    if (currentFilters.startDate && currentFilters.endDate) {
+      const startDate = new Date(currentFilters.startDate)
+      const endDate = new Date(currentFilters.endDate)
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
+
+      if (currentFilters.granularity === "monthly") {
+        dateRangeMultiplier = Math.ceil(diffDays / 30.44) // Average days per month
+      } else if (currentFilters.granularity === "weekly") {
+        dateRangeMultiplier = Math.ceil(diffDays / 7)
+      }
+    }
+
     repGroups.forEach((repReports, repId) => {
       // Sum actuals for this rep
       const repActuals = repReports.reduce(
@@ -234,7 +248,7 @@ export default function HomePage() {
         },
       )
 
-      // Calculate targets once per rep based on granularity
+      // Calculate targets once per rep based on granularity and date range
       const firstReport = repReports[0]
       const annualPremiumTarget = (firstReport as any)._annualPremiumTarget || 0
       const annualSalesCounselorTarget = (firstReport as any)._annualSalesCounselorTarget || 0
@@ -248,20 +262,26 @@ export default function HomePage() {
         agencyCoopTarget: annualAgencyCoopTarget,
       }
 
-      // Apply time-based scaling if granularity is set
       if (currentFilters.granularity === "monthly") {
         repTargets = {
-          premiumTarget: Math.round((annualPremiumTarget / 12) * 100) / 100,
-          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * 100) / 100,
-          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * 100) / 100,
-          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * 100) / 100,
+          premiumTarget: Math.round((annualPremiumTarget / 12) * dateRangeMultiplier * 100) / 100,
+          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * dateRangeMultiplier * 100) / 100,
+          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * dateRangeMultiplier * 100) / 100,
+          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * dateRangeMultiplier * 100) / 100,
         }
       } else if (currentFilters.granularity === "weekly") {
         repTargets = {
-          premiumTarget: Math.round((annualPremiumTarget / 48) * 100) / 100,
-          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 48) * 100) / 100,
-          policySoldTarget: Math.round((annualPolicySoldTarget / 48) * 100) / 100,
-          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 48) * 100) / 100,
+          premiumTarget: Math.round((annualPremiumTarget / 48) * dateRangeMultiplier * 100) / 100,
+          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 48) * dateRangeMultiplier * 100) / 100,
+          policySoldTarget: Math.round((annualPolicySoldTarget / 48) * dateRangeMultiplier * 100) / 100,
+          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 48) * dateRangeMultiplier * 100) / 100,
+        }
+      } else {
+        repTargets = {
+          premiumTarget: Math.round(annualPremiumTarget * dateRangeMultiplier * 100) / 100,
+          salesCounselorTarget: Math.round(annualSalesCounselorTarget * dateRangeMultiplier * 100) / 100,
+          policySoldTarget: Math.round(annualPolicySoldTarget * dateRangeMultiplier * 100) / 100,
+          agencyCoopTarget: Math.round(annualAgencyCoopTarget * dateRangeMultiplier * 100) / 100,
         }
       }
 
