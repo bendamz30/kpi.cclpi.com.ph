@@ -123,58 +123,51 @@ function getPeriodKey(dateString, groupBy) {
   }
 }
 
-/**
- * Calculate target based on annual target and filter context
- * @param {number} annualTarget - The annual target value
- * @param {string} startDate - Start date (optional)
- * @param {string} endDate - End date (optional)
- * @param {string} mode - 'monthly', 'weekly', or 'annual'
- * @returns {number} Adjusted target value
- */
-function calculateTarget(annualTarget, startDate, endDate, mode = "monthly") {
-  if (!annualTarget || annualTarget === 0) return 0
+// Helper function to calculate target based on annual target and filter context
+// function calculateTarget(annualTarget, startDate, endDate, mode = "monthly") {
+//   if (!annualTarget || annualTarget === 0) return 0
 
-  // If no date range is provided, return full annual target
-  if (!startDate || !endDate) {
-    return annualTarget
-  }
+//   // If no date range is provided, return full annual target
+//   if (!startDate || !endDate) {
+//     return annualTarget
+//   }
 
-  try {
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    const diffTime = Math.abs(end - start)
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Include both start and end dates
+//   try {
+//     const start = new Date(startDate)
+//     const end = new Date(endDate)
+//     const diffTime = Math.abs(end - start)
+//     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Include both start and end dates
 
-    if (mode === "monthly") {
-      const monthlyTarget = annualTarget / 12
+//     if (mode === "monthly") {
+//       const monthlyTarget = annualTarget / 12
 
-      // If less than 1 month, show 1 month target
-      if (diffDays < 30) {
-        return Math.round(monthlyTarget * 100) / 100
-      }
+//       // If less than 1 month, show 1 month target
+//       if (diffDays < 30) {
+//         return Math.round(monthlyTarget * 100) / 100
+//       }
 
-      // Calculate number of months and multiply
-      const months = Math.ceil(diffDays / 30)
-      return Math.round(monthlyTarget * months * 100) / 100
-    } else if (mode === "weekly") {
-      const weeklyTarget = annualTarget / 48 // Changed from 52 to 48
+//       // Calculate number of months and multiply
+//       const months = Math.ceil(diffDays / 30)
+//       return Math.round(monthlyTarget * months * 100) / 100
+//     } else if (mode === "weekly") {
+//       const weeklyTarget = annualTarget / 48 // Changed from 52 to 48
 
-      // If less than 7 days, show 1 week target
-      if (diffDays < 7) {
-        return Math.round(weeklyTarget * 100) / 100
-      }
+//       // If less than 7 days, show 1 week target
+//       if (diffDays < 7) {
+//         return Math.round(weeklyTarget * 100) / 100
+//       }
 
-      // Calculate number of weeks and multiply
-      const weeks = Math.ceil(diffDays / 7)
-      return Math.round(weeklyTarget * weeks * 100) / 100
-    }
-  } catch (error) {
-    console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
-  }
+//       // Calculate number of weeks and multiply
+//       const weeks = Math.ceil(diffDays / 7)
+//       return Math.round(weeklyTarget * weeks * 100) / 100
+//     }
+//   } catch (error) {
+//     console.warn(`⚠️  Invalid date range for target calculation: ${startDate} - ${endDate}`)
+//   }
 
-  // Default to annual target if calculation fails
-  return annualTarget
-}
+//   // Default to annual target if calculation fails
+//   return annualTarget
+// }
 
 async function main() {
   console.log("🚀 Starting merge reports process...\n")
@@ -378,31 +371,20 @@ async function main() {
       }
 
       if (annualTarget) {
-        groupTargets = {
-          premiumTarget: calculateTarget(
-            safeNumber(annualTarget.premiumTarget),
-            options.start,
-            options.end,
-            options.group,
-          ),
-          salesCounselorTarget: calculateTarget(
-            safeNumber(annualTarget.salesCounselorTarget),
-            options.start,
-            options.end,
-            options.group,
-          ),
-          policySoldTarget: calculateTarget(
-            safeNumber(annualTarget.policySoldTarget),
-            options.start,
-            options.end,
-            options.group,
-          ),
-          agencyCoopTarget: calculateTarget(
-            safeNumber(annualTarget.agencyCoopTarget),
-            options.start,
-            options.end,
-            options.group,
-          ),
+        if (options.group === "monthly") {
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 12) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 12) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 12) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 12) * 100) / 100,
+          }
+        } else if (options.group === "weekly") {
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 48) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 48) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 48) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 48) * 100) / 100,
+          }
         }
       }
 
