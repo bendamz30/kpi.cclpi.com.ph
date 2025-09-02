@@ -332,9 +332,10 @@ async function main() {
 
     mergedReports.forEach((report) => {
       const periodKey = getPeriodKey(report.reportDate, options.group)
+      const groupKey = `${report.salesRepId}-${periodKey}` // Unique key per rep per period
 
-      if (!grouped.has(periodKey)) {
-        grouped.set(periodKey, {
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, {
           period: periodKey,
           salesRepId: report.salesRepId,
           salesRepName: report.salesRepName,
@@ -350,10 +351,11 @@ async function main() {
           agencyCoopActual: 0,
           reportCount: 0,
           targetExists: false,
+          reportDate: report.reportDate, // Keep for year extraction
         })
       }
 
-      const group = grouped.get(periodKey)
+      const group = grouped.get(groupKey)
 
       // Sum actuals only
       group.premiumActual += report.premiumActual || 0
@@ -368,9 +370,7 @@ async function main() {
     })
 
     mergedReports = Array.from(grouped.values()).map((group) => {
-      // Find the annual target for this sales rep
-      const sampleReport = mergedReports.find((r) => getPeriodKey(r.reportDate, options.group) === group.period)
-      const reportYear = extractYear(sampleReport?.reportDate)
+      const reportYear = extractYear(group.reportDate)
       const targetKey = `${group.salesRepId}-${reportYear}`
       const annualTarget = targetsMap.get(targetKey)
 
@@ -382,17 +382,20 @@ async function main() {
       }
 
       if (annualTarget) {
-        const filterContext = {
-          granularity: options.group,
-          startDate: options.start,
-          endDate: options.end,
-        }
-
-        groupTargets = {
-          premiumTarget: calculateTarget(safeNumber(annualTarget.premiumTarget), filterContext),
-          salesCounselorTarget: calculateTarget(safeNumber(annualTarget.salesCounselorTarget), filterContext),
-          policySoldTarget: calculateTarget(safeNumber(annualTarget.policySoldTarget), filterContext),
-          agencyCoopTarget: calculateTarget(safeNumber(annualTarget.agencyCoopTarget), filterContext),
+        if (options.group === "monthly") {
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 12) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 12) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 12) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 12) * 100) / 100,
+          }
+        } else if (options.group === "weekly") {
+          groupTargets = {
+            premiumTarget: Math.round((safeNumber(annualTarget.premiumTarget) / 52) * 100) / 100,
+            salesCounselorTarget: Math.round((safeNumber(annualTarget.salesCounselorTarget) / 52) * 100) / 100,
+            policySoldTarget: Math.round((safeNumber(annualTarget.policySoldTarget) / 52) * 100) / 100,
+            agencyCoopTarget: Math.round((safeNumber(annualTarget.agencyCoopTarget) / 52) * 100) / 100,
+          }
         }
       }
 
