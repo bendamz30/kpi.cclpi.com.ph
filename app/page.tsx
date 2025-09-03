@@ -11,6 +11,7 @@ import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboar
 import { SalesPerformanceChart } from "@/components/dashboard/sales-performance-chart"
 import { RealTimeProvider, useRealTime } from "@/components/providers/real-time-provider"
 import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
+import { SummaryTable } from "@/components/dashboard/summary-table"
 import type { User } from "@/lib/mock-data"
 
 interface KpiType {
@@ -669,6 +670,7 @@ function DashboardContent() {
             </div>
             <DashboardFilters onFiltersChange={handleFiltersChange} />
             <DashboardKPICards data={kpiData} loading={loading} />
+            <SummaryTable reports={mergedReports} currentFilters={currentFilters} selectedMetric="premium" />
             <SalesPerformanceChart
               reports={mergedReports}
               selectedSalesOfficer={currentFilters.salesRepId}
