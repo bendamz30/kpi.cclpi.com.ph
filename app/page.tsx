@@ -111,6 +111,29 @@ function DashboardContent() {
     console.debug("[v0] applyFilters called with filters:", filters)
     console.debug("[v0] Input reports count:", reports.length)
 
+    console.debug("[v0] Sales Type filter debug:")
+    console.debug("- Raw salesTypeId filter:", filters.salesTypeId)
+    console.debug(
+      "- Normalized salesTypeId filter:",
+      filters.salesTypeId === "" || filters.salesTypeId === "all" ? null : Number(filters.salesTypeId),
+    )
+
+    // Check what salesTypeId values exist in reports
+    const uniqueSalesTypeIds = [...new Set(reports.map((r) => r.salesTypeId))]
+    console.debug("- Unique salesTypeId values in reports:", uniqueSalesTypeIds)
+
+    // Check specific users' salesTypeId values
+    const userSalesTypes = reports.reduce(
+      (acc, r) => {
+        if (!acc[r.salesRepId]) {
+          acc[r.salesRepId] = { userName: r.userName, salesTypeId: r.salesTypeId }
+        }
+        return acc
+      },
+      {} as Record<number, { userName: string; salesTypeId: number }>,
+    )
+    console.debug("- User salesTypeId mapping:", userSalesTypes)
+
     const dianneReport = reports.find((r) => r.salesRepId === 105)
     if (dianneReport) {
       console.debug("[v0] Found Dianne's report:", dianneReport)
@@ -130,16 +153,17 @@ function DashboardContent() {
       const fRegion = filters.regionId === "" || filters.regionId === "all" ? null : Number(filters.regionId)
       const fSalesRep = filters.salesRepId === "" || filters.salesRepId === "all" ? null : Number(filters.salesRepId)
 
-      // Sales Type filtering
       if (fSalesType !== null) {
+        console.debug(
+          `[v0] Filtering by salesType: ${fSalesType}, report salesTypeId: ${report.salesTypeId} (${report.userName})`,
+        )
         if (Number(report.salesTypeId) !== fSalesType) {
-          if (report.salesRepId === 105) {
-            console.debug("[v0] Dianne filtered out by sales type:", {
-              reportSalesTypeId: report.salesTypeId,
-              filterSalesTypeId: fSalesType,
-            })
-          }
+          console.debug(
+            `[v0] ${report.userName} filtered out by sales type: report=${report.salesTypeId}, filter=${fSalesType}`,
+          )
           return false
+        } else {
+          console.debug(`[v0] ${report.userName} passed sales type filter`)
         }
       }
 
@@ -209,6 +233,11 @@ function DashboardContent() {
     })
 
     console.debug("[v0] Filtered reports count:", filteredReports.length)
+    const filteredUsers = [
+      ...new Set(filteredReports.map((r) => `${r.userName} (salesTypeId: ${r.salesTypeId})`)),
+    ].sort()
+    console.debug("[v0] Users in filtered results:", filteredUsers)
+
     const dianneInFiltered = filteredReports.find((r) => r.salesRepId === 105)
     if (dianneInFiltered) {
       console.debug("[v0] Dianne's report included in filtered results")
