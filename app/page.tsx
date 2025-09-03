@@ -9,6 +9,7 @@ import { UsersTable } from "@/components/dashboard/users-table"
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters"
 import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboard-kpi-cards"
 import { SalesPerformanceChart } from "@/components/dashboard/sales-performance-chart"
+import { RealTimeProvider, useRealTime } from "@/components/providers/real-time-provider"
 import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
 import type { User } from "@/lib/mock-data"
 
@@ -57,7 +58,7 @@ interface MergedReport {
   _annualAgencyCoopTarget: number
 }
 
-export default function HomePage() {
+function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [kpis, setKpis] = useState<KpiType[]>([])
@@ -74,6 +75,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [mergedReports, setMergedReports] = useState<MergedReport[]>([])
   const [currentFilters, setCurrentFilters] = useState<FilterCriteria>({})
+  const { lastUpdate } = useRealTime()
 
   useEffect(() => {
     const auth = getStoredAuth()
@@ -334,144 +336,151 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true)
-      try {
-        console.debug("[v0] Loading initial dashboard data...")
-
-        let reports: MergedReport[] = []
-
-        try {
-          const mergedResponse = await fetch("/api/merged-reports")
-          if (mergedResponse.ok) {
-            reports = await mergedResponse.json()
-            console.debug("[v0] Loaded merged reports:", reports.length)
-          }
-        } catch (error) {
-          console.debug("[v0] No merged reports found, merging on frontend...")
-        }
-
-        // If no merged reports, merge on frontend
-        if (reports.length === 0) {
-          const [salesReportsRes, usersRes, targetsRes, areasRes, regionsRes, salesTypesRes] = await Promise.all([
-            fetch("/api/sales-reports-data"),
-            fetch("/api/users"),
-            fetch("/api/sales-targets"),
-            fetch("/api/areas"),
-            fetch("/api/regions"),
-            fetch("/api/sales-types"),
-          ])
-
-          const [salesReports, users, targets, areas, regions, salesTypes] = await Promise.all([
-            salesReportsRes.json(),
-            usersRes.json(),
-            targetsRes.json(),
-            areasRes.json(),
-            regionsRes.json(),
-            salesTypesRes.json(),
-          ])
-
-          console.debug(
-            "[v0] Loaded counts: users=",
-            users.length,
-            ", reports=",
-            salesReports.length,
-            ", targets=",
-            targets.length,
-            ", areas=",
-            areas.length,
-            ", regions=",
-            regions.length,
-            ", salesTypes=",
-            salesTypes.length,
-          )
-
-          reports = salesReports.map((report: any) => {
-            const user = users.find((u: any) => Number(u.userId) === Number(report.salesRepId))
-            const reportYear = new Date(report.reportDate).getFullYear()
-            const target = targets.find(
-              (t: any) => Number(t.salesRepId) === Number(report.salesRepId) && Number(t.year) === reportYear,
-            )
-            const area = areas.find((a: any) => Number(a.areaId) === Number(user?.areaId))
-            const region = regions.find((r: any) => Number(r.regionId) === Number(user?.regionId))
-            const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user?.salesTypeId))
-
-            if (!user) {
-              console.debug(`[v0] Missing user for salesRepId: ${report.salesRepId}`)
-            } else {
-              if (!user.areaId) {
-                console.debug(`[v0] Missing areaId for user: ${user.name} (userId: ${user.userId})`)
-              }
-              if (!user.regionId) {
-                console.debug(`[v0] Missing regionId for user: ${user.name} (userId: ${user.userId})`)
-              }
-              if (!user.salesTypeId) {
-                console.debug(`[v0] Missing salesTypeId for user: ${user.name} (userId: ${user.userId})`)
-              }
-            }
-
-            if (!target) {
-              console.debug(`[v0] Missing salesTarget for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
-            }
-
-            // Set targets to 0 for individual reports to prevent multiplication
-            const mergedReport = {
-              ...report,
-              areaId: Number(user?.areaId) || 0,
-              regionId: Number(user?.regionId) || 0,
-              salesTypeId: Number(user?.salesTypeId) || 0,
-              areaName: area?.areaName || "Unknown",
-              regionName: region?.regionName || "Unknown",
-              salesTypeName: salesType?.salesTypeName || "Unknown",
-              userName: user?.name || "Unknown",
-              // Set targets to 0 for individual reports to prevent multiplication
-              premiumTarget: 0,
-              salesCounselorTarget: 0,
-              policySoldTarget: 0,
-              agencyCoopTarget: 0,
-              // Store annual targets for later calculation
-              _annualPremiumTarget: Number(target?.premiumTarget) || 0,
-              _annualSalesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
-              _annualPolicySoldTarget: Number(target?.policySoldTarget) || 0,
-              _annualAgencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
-            }
-
-            if (report.salesRepId === 105) {
-              console.debug("[v0] Dianne's merged report:", mergedReport)
-            }
-
-            return mergedReport
-          })
-        }
-
-        setMergedReports(reports)
-
-        const initialFilters: FilterCriteria = {
-          salesTypeId: "",
-          areaId: "",
-          regionId: "",
-          salesRepId: "",
-          startDate: "",
-          endDate: "",
-          granularity: "monthly",
-        }
-        setCurrentFilters(initialFilters)
-
-        const filteredReports = applyFilters(reports, initialFilters)
-        const kpisArray = aggregateReportsToKPIs(filteredReports)
-        setKpis(kpisArray)
-
-        const convertedData = convertKpisToKpiData(kpisArray)
-        setKpiData(convertedData)
-
-        console.debug("[v0] Initial data loaded successfully with all data displayed")
-      } catch (error) {
-        console.error("[v0] Error loading initial dashboard data:", error)
-      } finally {
-        setLoading(false)
-      }
+    if (lastUpdate > 0 && mergedReports.length > 0) {
+      console.log("[v0] Real-time update detected, reloading data...")
+      loadInitialData()
     }
+  }, [lastUpdate])
 
+  const loadInitialData = async () => {
+    setLoading(true)
+    try {
+      console.debug("[v0] Loading initial dashboard data...")
+
+      let reports: MergedReport[] = []
+
+      try {
+        const mergedResponse = await fetch("/api/merged-reports")
+        if (mergedResponse.ok) {
+          reports = await mergedResponse.json()
+          console.debug("[v0] Loaded merged reports:", reports.length)
+        }
+      } catch (error) {
+        console.debug("[v0] No merged reports found, merging on frontend...")
+      }
+
+      // If no merged reports, merge on frontend
+      if (reports.length === 0) {
+        const [salesReportsRes, usersRes, targetsRes, areasRes, regionsRes, salesTypesRes] = await Promise.all([
+          fetch("/api/sales-reports-data"),
+          fetch("/api/users"),
+          fetch("/api/sales-targets"),
+          fetch("/api/areas"),
+          fetch("/api/regions"),
+          fetch("/api/sales-types"),
+        ])
+
+        const [salesReports, users, targets, areas, regions, salesTypes] = await Promise.all([
+          salesReportsRes.json(),
+          usersRes.json(),
+          targetsRes.json(),
+          areasRes.json(),
+          regionsRes.json(),
+          salesTypesRes.json(),
+        ])
+
+        console.debug(
+          "[v0] Loaded counts: users=",
+          users.length,
+          ", reports=",
+          salesReports.length,
+          ", targets=",
+          targets.length,
+          ", areas=",
+          areas.length,
+          ", regions=",
+          regions.length,
+          ", salesTypes=",
+          salesTypes.length,
+        )
+
+        reports = salesReports.map((report: any) => {
+          const user = users.find((u: any) => Number(u.userId) === Number(report.salesRepId))
+          const reportYear = new Date(report.reportDate).getFullYear()
+          const target = targets.find(
+            (t: any) => Number(t.salesRepId) === Number(report.salesRepId) && Number(t.year) === reportYear,
+          )
+          const area = areas.find((a: any) => Number(a.areaId) === Number(user?.areaId))
+          const region = regions.find((r: any) => Number(r.regionId) === Number(user?.regionId))
+          const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user?.salesTypeId))
+
+          if (!user) {
+            console.debug(`[v0] Missing user for salesRepId: ${report.salesRepId}`)
+          } else {
+            if (!user.areaId) {
+              console.debug(`[v0] Missing areaId for user: ${user.name} (userId: ${user.userId})`)
+            }
+            if (!user.regionId) {
+              console.debug(`[v0] Missing regionId for user: ${user.name} (userId: ${user.userId})`)
+            }
+            if (!user.salesTypeId) {
+              console.debug(`[v0] Missing salesTypeId for user: ${user.name} (userId: ${user.userId})`)
+            }
+          }
+
+          if (!target) {
+            console.debug(`[v0] Missing salesTarget for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
+          }
+
+          // Set targets to 0 for individual reports to prevent multiplication
+          const mergedReport = {
+            ...report,
+            areaId: Number(user?.areaId) || 0,
+            regionId: Number(user?.regionId) || 0,
+            salesTypeId: Number(user?.salesTypeId) || 0,
+            areaName: area?.areaName || "Unknown",
+            regionName: region?.regionName || "Unknown",
+            salesTypeName: salesType?.salesTypeName || "Unknown",
+            userName: user?.name || "Unknown",
+            // Set targets to 0 for individual reports to prevent multiplication
+            premiumTarget: 0,
+            salesCounselorTarget: 0,
+            policySoldTarget: 0,
+            agencyCoopTarget: 0,
+            // Store annual targets for later calculation
+            _annualPremiumTarget: Number(target?.premiumTarget) || 0,
+            _annualSalesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
+            _annualPolicySoldTarget: Number(target?.policySoldTarget) || 0,
+            _annualAgencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
+          }
+
+          if (report.salesRepId === 105) {
+            console.debug("[v0] Dianne's merged report:", mergedReport)
+          }
+
+          return mergedReport
+        })
+      }
+
+      setMergedReports(reports)
+
+      const initialFilters: FilterCriteria = {
+        salesTypeId: "",
+        areaId: "",
+        regionId: "",
+        salesRepId: "",
+        startDate: "",
+        endDate: "",
+        granularity: "monthly",
+      }
+      setCurrentFilters(initialFilters)
+
+      const filteredReports = applyFilters(reports, initialFilters)
+      const kpisArray = aggregateReportsToKPIs(filteredReports)
+      setKpis(kpisArray)
+
+      const convertedData = convertKpisToKpiData(kpisArray)
+      setKpiData(convertedData)
+
+      console.debug("[v0] Initial data loaded successfully with all data displayed")
+    } catch (error) {
+      console.error("[v0] Error loading initial dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadInitialData()
   }, [])
 
@@ -626,5 +635,13 @@ export default function HomePage() {
         <main className="flex-1 p-6">{renderContent()}</main>
       </div>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <RealTimeProvider>
+      <DashboardContent />
+    </RealTimeProvider>
   )
 }

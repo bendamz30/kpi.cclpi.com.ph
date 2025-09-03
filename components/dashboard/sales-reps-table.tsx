@@ -18,6 +18,7 @@ import {
 import { Plus, Search, ChevronLeft, ChevronRight, ArrowUpDown, Edit, Trash2 } from "lucide-react"
 import { AddSalesReportForm } from "./add-sales-report-form"
 import { EditSalesReportForm } from "./edit-sales-report-form"
+import { useRealTime } from "@/components/providers/real-time-provider"
 
 interface SalesReport {
   reportId: number
@@ -53,6 +54,8 @@ export function SalesRepsTable() {
   const [sortField, setSortField] = useState<SortField>("reportDate")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
 
+  const { lastUpdate } = useRealTime()
+
   const reportsPerPage = 10
 
   const fetchReports = async () => {
@@ -75,6 +78,13 @@ export function SalesRepsTable() {
   useEffect(() => {
     fetchReports()
   }, [])
+
+  useEffect(() => {
+    if (lastUpdate > 0 && reports.length > 0) {
+      console.log("[v0] Real-time update detected in sales reps table, refreshing data...")
+      fetchReports()
+    }
+  }, [lastUpdate])
 
   useEffect(() => {
     if (message) {
