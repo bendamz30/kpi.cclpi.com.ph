@@ -171,7 +171,7 @@ importers:
         specifier: latest
         version: 5.38.6
       swr:
-        specifier: latest
+        specifier: ^2.2.5
         version: 2.3.6(react@19.0.0)
       tailwind-merge:
         specifier: ^2.5.5

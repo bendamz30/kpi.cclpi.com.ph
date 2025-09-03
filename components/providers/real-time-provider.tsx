@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import useSWR from "swr"
 
 interface RealTimeContextType {
   isConnected: boolean
@@ -26,24 +25,32 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const [usePolling, setUsePolling] = useState(false)
 
-  // SWR fallback with 5-second polling
-  const { mutate } = useSWR(usePolling ? "/api/sales-reports-data" : null, null, {
-    refreshInterval: 5000,
-    onSuccess: () => {
-      setLastUpdate(Date.now())
-    },
-  })
-
   const triggerRefresh = () => {
     setLastUpdate(Date.now())
-    if (usePolling) {
-      mutate()
-    }
   }
 
   useEffect(() => {
     let eventSource: EventSource | null = null
     let reconnectTimeout: NodeJS.Timeout
+    let pollingInterval: NodeJS.Timeout
+
+    const startPolling = () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+      }
+
+      pollingInterval = setInterval(async () => {
+        try {
+          const response = await fetch("/api/sales-reports-data")
+          if (response.ok) {
+            console.log("[v0] Polling: Data refreshed")
+            setLastUpdate(Date.now())
+          }
+        } catch (error) {
+          console.error("[v0] Polling error:", error)
+        }
+      }, 5000)
+    }
 
     const connect = () => {
       try {
@@ -53,6 +60,11 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
           console.log("[v0] SSE connected")
           setIsConnected(true)
           setUsePolling(false)
+
+          // Clear polling when SSE is connected
+          if (pollingInterval) {
+            clearInterval(pollingInterval)
+          }
         }
 
         eventSource.onmessage = (event) => {
@@ -78,6 +90,7 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
 
           // Fallback to polling after SSE failure
           setUsePolling(true)
+          startPolling()
 
           // Attempt to reconnect after 10 seconds
           reconnectTimeout = setTimeout(connect, 10000)
@@ -85,6 +98,7 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
       } catch (error) {
         console.error("[v0] Failed to create SSE connection:", error)
         setUsePolling(true)
+        startPolling()
       }
     }
 
@@ -96,6 +110,9 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
       }
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout)
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
       }
     }
   }, [])
