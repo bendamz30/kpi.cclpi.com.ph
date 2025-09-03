@@ -108,44 +108,7 @@ function DashboardContent() {
   }
 
   const applyFilters = (reports: MergedReport[], filters: FilterCriteria): MergedReport[] => {
-    console.debug("[v0] applyFilters called with filters:", filters)
-    console.debug("[v0] Input reports count:", reports.length)
-
-    console.debug("[v0] Sales Type filter debug:")
-    console.debug("- Raw salesTypeId filter:", filters.salesTypeId)
-    console.debug(
-      "- Normalized salesTypeId filter:",
-      filters.salesTypeId === "" || filters.salesTypeId === "all" ? null : Number(filters.salesTypeId),
-    )
-
-    // Check what salesTypeId values exist in reports
-    const uniqueSalesTypeIds = [...new Set(reports.map((r) => r.salesTypeId))]
-    console.debug("- Unique salesTypeId values in reports:", uniqueSalesTypeIds)
-
-    // Check specific users' salesTypeId values
-    const userSalesTypes = reports.reduce(
-      (acc, r) => {
-        if (!acc[r.salesRepId]) {
-          acc[r.salesRepId] = { userName: r.userName, salesTypeId: r.salesTypeId }
-        }
-        return acc
-      },
-      {} as Record<number, { userName: string; salesTypeId: number }>,
-    )
-    console.debug("- User salesTypeId mapping:", userSalesTypes)
-
-    const dianneReport = reports.find((r) => r.salesRepId === 105)
-    if (dianneReport) {
-      console.debug("[v0] Found Dianne's report:", dianneReport)
-    } else {
-      console.debug("[v0] Dianne's report (salesRepId: 105) not found in reports")
-    }
-
     const filteredReports = reports.filter((report) => {
-      if (report.salesRepId === 105) {
-        console.debug("[v0] Checking Dianne's report against filters...")
-      }
-
       // Normalize filter values - treat empty string or "all" as null (no filter)
       const fSalesType =
         filters.salesTypeId === "" || filters.salesTypeId === "all" ? null : Number(filters.salesTypeId)
@@ -154,28 +117,14 @@ function DashboardContent() {
       const fSalesRep = filters.salesRepId === "" || filters.salesRepId === "all" ? null : Number(filters.salesRepId)
 
       if (fSalesType !== null) {
-        console.debug(
-          `[v0] Filtering by salesType: ${fSalesType}, report salesTypeId: ${report.salesTypeId} (${report.userName})`,
-        )
         if (Number(report.salesTypeId) !== fSalesType) {
-          console.debug(
-            `[v0] ${report.userName} filtered out by sales type: report=${report.salesTypeId}, filter=${fSalesType}`,
-          )
           return false
-        } else {
-          console.debug(`[v0] ${report.userName} passed sales type filter`)
         }
       }
 
       // Area filtering
       if (fArea !== null) {
         if (Number(report.areaId) !== fArea) {
-          if (report.salesRepId === 105) {
-            console.debug("[v0] Dianne filtered out by area:", {
-              reportAreaId: report.areaId,
-              filterAreaId: fArea,
-            })
-          }
           return false
         }
       }
@@ -183,12 +132,6 @@ function DashboardContent() {
       // Region filtering
       if (fRegion !== null) {
         if (Number(report.regionId) !== fRegion) {
-          if (report.salesRepId === 105) {
-            console.debug("[v0] Dianne filtered out by region:", {
-              reportRegionId: report.regionId,
-              filterRegionId: fRegion,
-            })
-          }
           return false
         }
       }
@@ -196,18 +139,8 @@ function DashboardContent() {
       // Sales Rep filtering
       if (fSalesRep !== null) {
         if (Number(report.salesRepId) !== fSalesRep) {
-          if (report.salesRepId === 105) {
-            console.debug("[v0] Dianne filtered out by sales rep:", {
-              reportSalesRepId: report.salesRepId,
-              filterSalesRepId: fSalesRep,
-            })
-          }
           return false
         }
-      }
-
-      if (report.salesRepId === 105) {
-        console.debug("[v0] Dianne's report passed all filters!")
       }
 
       // Date filtering
@@ -232,25 +165,10 @@ function DashboardContent() {
       return true
     })
 
-    console.debug("[v0] Filtered reports count:", filteredReports.length)
-    const filteredUsers = [
-      ...new Set(filteredReports.map((r) => `${r.userName} (salesTypeId: ${r.salesTypeId})`)),
-    ].sort()
-    console.debug("[v0] Users in filtered results:", filteredUsers)
-
-    const dianneInFiltered = filteredReports.find((r) => r.salesRepId === 105)
-    if (dianneInFiltered) {
-      console.debug("[v0] Dianne's report included in filtered results")
-    } else {
-      console.debug("[v0] Dianne's report NOT included in filtered results")
-    }
-
     return filteredReports
   }
 
   const aggregateReportsToKPIs = (reports: MergedReport[]): KpiType[] => {
-    console.debug("[v0] Aggregating KPIs from", reports.length, "reports")
-
     const repGroups = new Map<number, MergedReport[]>()
     reports.forEach((report) => {
       const repId = Number(report.salesRepId)
@@ -262,7 +180,6 @@ function DashboardContent() {
 
     const monthsInRange = calculateMonthsInRange(currentFilters.startDate, currentFilters.endDate)
     const hasDateFilter = currentFilters.startDate && currentFilters.endDate
-    console.debug("[v0] Months in selected range:", monthsInRange, "Has date filter:", hasDateFilter)
 
     const totals = {
       premiumActual: 0,
@@ -338,15 +255,6 @@ function DashboardContent() {
         agencyCoopBudgetMonthly: Math.round((annualAgencyCoopTarget / 12) * 100) / 100,
         agencyCoopBudgetWeekly: Math.round((annualAgencyCoopTarget / 48) * 100) / 100,
       }
-
-      console.debug("[v0] Rep", repId, "targets:", {
-        annual: annualPremiumTarget,
-        monthsInRange: monthsInRange,
-        hasDateFilter: hasDateFilter,
-        calculatedTarget: repTargets.premiumTarget,
-        monthlyBudget: repBudgets.premiumBudgetMonthly,
-        weeklyBudget: repBudgets.premiumBudgetWeekly,
-      })
 
       // Add to totals
       totals.premiumActual += repActuals.premiumActual
@@ -424,13 +332,11 @@ function DashboardContent() {
       },
     ]
 
-    console.debug("[v0] KPIs computed:", kpis)
     return kpis
   }
 
   useEffect(() => {
     if (lastUpdate > 0 && mergedReports.length > 0) {
-      console.log("[v0] Real-time update detected, reloading data...")
       loadInitialData()
     }
   }, [lastUpdate])
@@ -438,18 +344,15 @@ function DashboardContent() {
   const loadInitialData = async () => {
     setLoading(true)
     try {
-      console.debug("[v0] Loading initial dashboard data...")
-
       let reports: MergedReport[] = []
 
       try {
         const mergedResponse = await fetch("/api/merged-reports")
         if (mergedResponse.ok) {
           reports = await mergedResponse.json()
-          console.debug("[v0] Loaded merged reports:", reports.length)
         }
       } catch (error) {
-        console.debug("[v0] No merged reports found, merging on frontend...")
+        // Fallback to frontend merging
       }
 
       // If no merged reports, merge on frontend
@@ -472,21 +375,6 @@ function DashboardContent() {
           salesTypesRes.json(),
         ])
 
-        console.debug(
-          "[v0] Loaded counts: users=",
-          users.length,
-          ", reports=",
-          salesReports.length,
-          ", targets=",
-          targets.length,
-          ", areas=",
-          areas.length,
-          ", regions=",
-          regions.length,
-          ", salesTypes=",
-          salesTypes.length,
-        )
-
         reports = salesReports.map((report: any) => {
           const user = users.find((u: any) => Number(u.userId) === Number(report.salesRepId))
           const reportYear = new Date(report.reportDate).getFullYear()
@@ -496,24 +384,6 @@ function DashboardContent() {
           const area = areas.find((a: any) => Number(a.areaId) === Number(user?.areaId))
           const region = regions.find((r: any) => Number(r.regionId) === Number(user?.regionId))
           const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user?.salesTypeId))
-
-          if (!user) {
-            console.debug(`[v0] Missing user for salesRepId: ${report.salesRepId}`)
-          } else {
-            if (!user.areaId) {
-              console.debug(`[v0] Missing areaId for user: ${user.name} (userId: ${user.userId})`)
-            }
-            if (!user.regionId) {
-              console.debug(`[v0] Missing regionId for user: ${user.name} (userId: ${user.userId})`)
-            }
-            if (!user.salesTypeId) {
-              console.debug(`[v0] Missing salesTypeId for user: ${user.name} (userId: ${user.userId})`)
-            }
-          }
-
-          if (!target) {
-            console.debug(`[v0] Missing salesTarget for salesRepId: ${report.salesRepId}, year: ${reportYear}`)
-          }
 
           // Set targets to 0 for individual reports to prevent multiplication
           const mergedReport = {
@@ -535,10 +405,6 @@ function DashboardContent() {
             _annualSalesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
             _annualPolicySoldTarget: Number(target?.policySoldTarget) || 0,
             _annualAgencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
-          }
-
-          if (report.salesRepId === 105) {
-            console.debug("[v0] Dianne's merged report:", mergedReport)
           }
 
           return mergedReport
@@ -564,8 +430,6 @@ function DashboardContent() {
 
       const convertedData = convertKpisToKpiData(kpisArray)
       setKpiData(convertedData)
-
-      console.debug("[v0] Initial data loaded successfully with all data displayed")
     } catch (error) {
       console.error("[v0] Error loading initial dashboard data:", error)
     } finally {
@@ -609,7 +473,6 @@ function DashboardContent() {
     }
 
     if (!Array.isArray(kpisArray) || kpisArray.length === 0) {
-      console.debug("[v0] No KPIs to convert, using defaults")
       return defaultData
     }
 
@@ -645,11 +508,10 @@ function DashboardContent() {
           result.agencyCoopBudgetWeekly = kpi.budgetWeekly
           break
         default:
-          console.debug("[v0] Unknown KPI key:", kpi.key)
+        // Unknown KPI key
       }
     })
 
-    console.debug("[v0] Converted KPIs to KPIData:", result)
     return result
   }
 
@@ -666,8 +528,6 @@ function DashboardContent() {
   const handleFiltersChange = async (filters: any) => {
     setLoading(true)
     try {
-      console.debug("[v0] Applying filters:", filters)
-
       const filterCriteria: FilterCriteria = {
         salesTypeId: !filters.salesType || filters.salesType === "all" ? "" : filters.salesType,
         areaId: !filters.area || filters.area === "all" ? "" : filters.area,
