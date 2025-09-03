@@ -446,15 +446,25 @@ export default function HomePage() {
 
         setMergedReports(reports)
 
-        // Apply initial filters (show all data) and compute KPIs
-        const filteredReports = applyFilters(reports, {})
+        const initialFilters: FilterCriteria = {
+          salesTypeId: "",
+          areaId: "",
+          regionId: "",
+          salesRepId: "",
+          startDate: "",
+          endDate: "",
+          granularity: "monthly",
+        }
+        setCurrentFilters(initialFilters)
+
+        const filteredReports = applyFilters(reports, initialFilters)
         const kpisArray = aggregateReportsToKPIs(filteredReports)
         setKpis(kpisArray)
 
         const convertedData = convertKpisToKpiData(kpisArray)
         setKpiData(convertedData)
 
-        console.debug("[v0] Initial data loaded successfully")
+        console.debug("[v0] Initial data loaded successfully with all data displayed")
       } catch (error) {
         console.error("[v0] Error loading initial dashboard data:", error)
       } finally {
@@ -541,10 +551,10 @@ export default function HomePage() {
       console.debug("[v0] Applying filters:", filters)
 
       const filterCriteria: FilterCriteria = {
-        salesTypeId: filters.salesType === "all" ? "" : filters.salesType || "",
-        areaId: filters.area === "all" ? "" : filters.area || "",
-        regionId: filters.region === "all" ? "" : filters.region || "",
-        salesRepId: filters.salesOfficer === "all" ? "" : filters.salesOfficer || "",
+        salesTypeId: !filters.salesType || filters.salesType === "all" ? "" : filters.salesType,
+        areaId: !filters.area || filters.area === "all" ? "" : filters.area,
+        regionId: !filters.region || filters.region === "all" ? "" : filters.region,
+        salesRepId: !filters.salesOfficer || filters.salesOfficer === "all" ? "" : filters.salesOfficer,
         startDate: filters.startDate || "",
         endDate: filters.endDate || "",
         granularity: filters.granularity || "monthly",
