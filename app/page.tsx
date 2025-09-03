@@ -21,6 +21,8 @@ interface KpiType {
   achievement: number
   variance: number
   status: string
+  budgetMonthly: number
+  budgetWeekly: number
 }
 
 interface FilterCriteria {
@@ -65,12 +67,20 @@ function DashboardContent() {
   const [kpiData, setKpiData] = useState<KPIData>({
     premiumActual: 0,
     premiumTarget: 0,
+    premiumBudgetMonthly: 0,
+    premiumBudgetWeekly: 0,
     salesCounselorActual: 0,
     salesCounselorTarget: 0,
+    salesCounselorBudgetMonthly: 0,
+    salesCounselorBudgetWeekly: 0,
     policySoldActual: 0,
     policySoldTarget: 0,
+    policySoldBudgetMonthly: 0,
+    policySoldBudgetWeekly: 0,
     agencyCoopActual: 0,
     agencyCoopTarget: 0,
+    agencyCoopBudgetMonthly: 0,
+    agencyCoopBudgetWeekly: 0,
   })
   const [loading, setLoading] = useState(false)
   const [mergedReports, setMergedReports] = useState<MergedReport[]>([])
@@ -221,17 +231,26 @@ function DashboardContent() {
     })
 
     const monthsInRange = calculateMonthsInRange(currentFilters.startDate, currentFilters.endDate)
-    console.debug("[v0] Months in selected range:", monthsInRange)
+    const hasDateFilter = currentFilters.startDate && currentFilters.endDate
+    console.debug("[v0] Months in selected range:", monthsInRange, "Has date filter:", hasDateFilter)
 
     const totals = {
       premiumActual: 0,
       premiumTarget: 0,
+      premiumBudgetMonthly: 0,
+      premiumBudgetWeekly: 0,
       salesCounselorActual: 0,
       salesCounselorTarget: 0,
+      salesCounselorBudgetMonthly: 0,
+      salesCounselorBudgetWeekly: 0,
       policySoldActual: 0,
       policySoldTarget: 0,
+      policySoldBudgetMonthly: 0,
+      policySoldBudgetWeekly: 0,
       agencyCoopActual: 0,
       agencyCoopTarget: 0,
+      agencyCoopBudgetMonthly: 0,
+      agencyCoopBudgetWeekly: 0,
     }
 
     repGroups.forEach((repReports, repId) => {
@@ -258,17 +277,45 @@ function DashboardContent() {
       const annualPolicySoldTarget = (firstReport as any)._annualPolicySoldTarget || 0
       const annualAgencyCoopTarget = (firstReport as any)._annualAgencyCoopTarget || 0
 
-      const repTargets = {
-        premiumTarget: Math.round((annualPremiumTarget / 12) * monthsInRange * 100) / 100,
-        salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * monthsInRange * 100) / 100,
-        policySoldTarget: Math.round((annualPolicySoldTarget / 12) * monthsInRange * 100) / 100,
-        agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * monthsInRange * 100) / 100,
+      // Calculate targets based on filter
+      let repTargets
+      if (hasDateFilter) {
+        // When date filter is applied, calculate based on months in range
+        repTargets = {
+          premiumTarget: Math.round((annualPremiumTarget / 12) * monthsInRange * 100) / 100,
+          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * monthsInRange * 100) / 100,
+          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * monthsInRange * 100) / 100,
+          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * monthsInRange * 100) / 100,
+        }
+      } else {
+        // Default (no filter) - show sum of all annual targets
+        repTargets = {
+          premiumTarget: annualPremiumTarget,
+          salesCounselorTarget: annualSalesCounselorTarget,
+          policySoldTarget: annualPolicySoldTarget,
+          agencyCoopTarget: annualAgencyCoopTarget,
+        }
       }
 
-      console.debug("[v0] Rep", repId, "dynamic targets:", {
+      // Budget targets (always monthly and weekly, not affected by filters)
+      const repBudgets = {
+        premiumBudgetMonthly: Math.round((annualPremiumTarget / 12) * 100) / 100,
+        premiumBudgetWeekly: Math.round((annualPremiumTarget / 48) * 100) / 100,
+        salesCounselorBudgetMonthly: Math.round((annualSalesCounselorTarget / 12) * 100) / 100,
+        salesCounselorBudgetWeekly: Math.round((annualSalesCounselorTarget / 48) * 100) / 100,
+        policySoldBudgetMonthly: Math.round((annualPolicySoldTarget / 12) * 100) / 100,
+        policySoldBudgetWeekly: Math.round((annualPolicySoldTarget / 48) * 100) / 100,
+        agencyCoopBudgetMonthly: Math.round((annualAgencyCoopTarget / 12) * 100) / 100,
+        agencyCoopBudgetWeekly: Math.round((annualAgencyCoopTarget / 48) * 100) / 100,
+      }
+
+      console.debug("[v0] Rep", repId, "targets:", {
         annual: annualPremiumTarget,
         monthsInRange: monthsInRange,
-        dynamicTarget: repTargets.premiumTarget,
+        hasDateFilter: hasDateFilter,
+        calculatedTarget: repTargets.premiumTarget,
+        monthlyBudget: repBudgets.premiumBudgetMonthly,
+        weeklyBudget: repBudgets.premiumBudgetWeekly,
       })
 
       // Add to totals
@@ -280,6 +327,14 @@ function DashboardContent() {
       totals.salesCounselorTarget += repTargets.salesCounselorTarget
       totals.policySoldTarget += repTargets.policySoldTarget
       totals.agencyCoopTarget += repTargets.agencyCoopTarget
+      totals.premiumBudgetMonthly += repBudgets.premiumBudgetMonthly
+      totals.premiumBudgetWeekly += repBudgets.premiumBudgetWeekly
+      totals.salesCounselorBudgetMonthly += repBudgets.salesCounselorBudgetMonthly
+      totals.salesCounselorBudgetWeekly += repBudgets.salesCounselorBudgetWeekly
+      totals.policySoldBudgetMonthly += repBudgets.policySoldBudgetMonthly
+      totals.policySoldBudgetWeekly += repBudgets.policySoldBudgetWeekly
+      totals.agencyCoopBudgetMonthly += repBudgets.agencyCoopBudgetMonthly
+      totals.agencyCoopBudgetWeekly += repBudgets.agencyCoopBudgetWeekly
     })
 
     const calculateAchievement = (actual: number, target: number): number => {
@@ -301,6 +356,8 @@ function DashboardContent() {
         achievement: calculateAchievement(totals.premiumActual, totals.premiumTarget),
         variance: totals.premiumActual - totals.premiumTarget,
         status: calculateStatus(calculateAchievement(totals.premiumActual, totals.premiumTarget)),
+        budgetMonthly: totals.premiumBudgetMonthly,
+        budgetWeekly: totals.premiumBudgetWeekly,
       },
       {
         key: "salesCounselors",
@@ -310,6 +367,8 @@ function DashboardContent() {
         achievement: calculateAchievement(totals.salesCounselorActual, totals.salesCounselorTarget),
         variance: totals.salesCounselorActual - totals.salesCounselorTarget,
         status: calculateStatus(calculateAchievement(totals.salesCounselorActual, totals.salesCounselorTarget)),
+        budgetMonthly: totals.salesCounselorBudgetMonthly,
+        budgetWeekly: totals.salesCounselorBudgetWeekly,
       },
       {
         key: "policiesSold",
@@ -319,6 +378,8 @@ function DashboardContent() {
         achievement: calculateAchievement(totals.policySoldActual, totals.policySoldTarget),
         variance: totals.policySoldActual - totals.policySoldTarget,
         status: calculateStatus(calculateAchievement(totals.policySoldActual, totals.policySoldTarget)),
+        budgetMonthly: totals.policySoldBudgetMonthly,
+        budgetWeekly: totals.policySoldBudgetWeekly,
       },
       {
         key: "agencyCoops",
@@ -328,6 +389,8 @@ function DashboardContent() {
         achievement: calculateAchievement(totals.agencyCoopActual, totals.agencyCoopTarget),
         variance: totals.agencyCoopActual - totals.agencyCoopTarget,
         status: calculateStatus(calculateAchievement(totals.agencyCoopActual, totals.agencyCoopTarget)),
+        budgetMonthly: totals.agencyCoopBudgetMonthly,
+        budgetWeekly: totals.agencyCoopBudgetWeekly,
       },
     ]
 
@@ -499,12 +562,20 @@ function DashboardContent() {
     const defaultData: KPIData = {
       premiumActual: 0,
       premiumTarget: 0,
+      premiumBudgetMonthly: 0,
+      premiumBudgetWeekly: 0,
       salesCounselorActual: 0,
       salesCounselorTarget: 0,
+      salesCounselorBudgetMonthly: 0,
+      salesCounselorBudgetWeekly: 0,
       policySoldActual: 0,
       policySoldTarget: 0,
+      policySoldBudgetMonthly: 0,
+      policySoldBudgetWeekly: 0,
       agencyCoopActual: 0,
       agencyCoopTarget: 0,
+      agencyCoopBudgetMonthly: 0,
+      agencyCoopBudgetWeekly: 0,
     }
 
     if (!Array.isArray(kpisArray) || kpisArray.length === 0) {
@@ -522,18 +593,26 @@ function DashboardContent() {
         case "premium":
           result.premiumActual = actual
           result.premiumTarget = target
+          result.premiumBudgetMonthly = kpi.budgetMonthly
+          result.premiumBudgetWeekly = kpi.budgetWeekly
           break
         case "salesCounselors":
           result.salesCounselorActual = actual
           result.salesCounselorTarget = target
+          result.salesCounselorBudgetMonthly = kpi.budgetMonthly
+          result.salesCounselorBudgetWeekly = kpi.budgetWeekly
           break
         case "policiesSold":
           result.policySoldActual = actual
           result.policySoldTarget = target
+          result.policySoldBudgetMonthly = kpi.budgetMonthly
+          result.policySoldBudgetWeekly = kpi.budgetWeekly
           break
         case "agencyCoops":
           result.agencyCoopActual = actual
           result.agencyCoopTarget = target
+          result.agencyCoopBudgetMonthly = kpi.budgetMonthly
+          result.agencyCoopBudgetWeekly = kpi.budgetWeekly
           break
         default:
           console.debug("[v0] Unknown KPI key:", kpi.key)

@@ -1,12 +1,20 @@
 export interface KPIData {
   premiumActual: number
   premiumTarget: number
+  premiumBudgetMonthly: number
+  premiumBudgetWeekly: number
   salesCounselorActual: number
   salesCounselorTarget: number
+  salesCounselorBudgetMonthly: number
+  salesCounselorBudgetWeekly: number
   policySoldActual: number
   policySoldTarget: number
+  policySoldBudgetMonthly: number
+  policySoldBudgetWeekly: number
   agencyCoopActual: number
   agencyCoopTarget: number
+  agencyCoopBudgetMonthly: number
+  agencyCoopBudgetWeekly: number
 }
 
 interface KPICardsProps {
@@ -31,7 +39,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
 
   const calculatePercentage = (actual: number, target: number) => {
     if (target === 0) return 0
-    return Math.min((actual / target) * 100, 100)
+    return (actual / target) * 100
   }
 
   const calculateVariance = (actual: number, target: number) => {
@@ -59,12 +67,20 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
   const safeData = {
     premiumActual: data?.premiumActual || 0,
     premiumTarget: data?.premiumTarget || 0,
+    premiumBudgetMonthly: data?.premiumBudgetMonthly || 0,
+    premiumBudgetWeekly: data?.premiumBudgetWeekly || 0,
     salesCounselorActual: data?.salesCounselorActual || 0,
     salesCounselorTarget: data?.salesCounselorTarget || 0,
+    salesCounselorBudgetMonthly: data?.salesCounselorBudgetMonthly || 0,
+    salesCounselorBudgetWeekly: data?.salesCounselorBudgetWeekly || 0,
     policySoldActual: data?.policySoldActual || 0,
     policySoldTarget: data?.policySoldTarget || 0,
+    policySoldBudgetMonthly: data?.policySoldBudgetMonthly || 0,
+    policySoldBudgetWeekly: data?.policySoldBudgetWeekly || 0,
     agencyCoopActual: data?.agencyCoopActual || 0,
     agencyCoopTarget: data?.agencyCoopTarget || 0,
+    agencyCoopBudgetMonthly: data?.agencyCoopBudgetMonthly || 0,
+    agencyCoopBudgetWeekly: data?.agencyCoopBudgetWeekly || 0,
   }
 
   const kpiItems = [
@@ -72,6 +88,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Premium",
       actual: safeData.premiumActual,
       target: safeData.premiumTarget,
+      budgetMonthly: safeData.premiumBudgetMonthly,
+      budgetWeekly: safeData.premiumBudgetWeekly,
       format: formatCurrency,
       color: "bg-blue-500",
     },
@@ -79,6 +97,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Sales Counselor",
       actual: safeData.salesCounselorActual,
       target: safeData.salesCounselorTarget,
+      budgetMonthly: safeData.salesCounselorBudgetMonthly,
+      budgetWeekly: safeData.salesCounselorBudgetWeekly,
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-emerald-500",
     },
@@ -86,6 +106,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Policy Sold",
       actual: safeData.policySoldActual,
       target: safeData.policySoldTarget,
+      budgetMonthly: safeData.policySoldBudgetMonthly,
+      budgetWeekly: safeData.policySoldBudgetWeekly,
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-amber-500",
     },
@@ -93,6 +115,8 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       title: "Agency Coop",
       actual: safeData.agencyCoopActual,
       target: safeData.agencyCoopTarget,
+      budgetMonthly: safeData.agencyCoopBudgetMonthly,
+      budgetWeekly: safeData.agencyCoopBudgetWeekly,
       format: (val: number) => (val ?? 0).toString(),
       color: "bg-purple-500",
     },
@@ -120,13 +144,24 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
               </div>
             </div>
 
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Monthly Budget:</span>
+                <span className="font-medium text-gray-900">{item.format(item.budgetMonthly)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Weekly Budget:</span>
+                <span className="font-medium text-gray-900">{item.format(item.budgetWeekly)}</span>
+              </div>
+            </div>
+
             <div className="space-y-3">
               <div className="text-sm font-medium text-gray-600">Progress</div>
 
               <div className="w-full bg-gray-100 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${item.color}`}
-                  style={{ width: `${percentage}%` }}
+                  style={{ width: `${Math.min(percentage, 100)}%` }}
                 ></div>
               </div>
 
