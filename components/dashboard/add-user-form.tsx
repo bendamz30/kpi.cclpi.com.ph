@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useRealTime } from "@/components/providers/real-time-provider"
 
 interface Area {
   areaId: number
@@ -52,6 +53,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const { triggerRefresh } = useRealTime()
 
   useEffect(() => {
     if (open) {
@@ -141,6 +143,11 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         title: "Success",
         description: `User ${result.user.name} has been added successfully.`,
       })
+
+      if (formData.role === "regionalUser" && formData.annualTarget) {
+        console.log("[v0] User with targets added, triggering dashboard refresh")
+        triggerRefresh()
+      }
 
       setFormData({
         name: "",

@@ -41,11 +41,21 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
 
       pollingInterval = setInterval(async () => {
         try {
-          const response = await fetch("/api/sales-reports-data")
-          if (response.ok) {
-            console.log("[v0] Polling: Data refreshed")
-            setLastUpdate(Date.now())
+          // Check multiple endpoints for data changes
+          const endpoints = ["/api/sales-reports-data", "/api/users", "/api/sales-targets"]
+
+          for (const endpoint of endpoints) {
+            try {
+              const response = await fetch(endpoint)
+              if (response.ok) {
+                console.log(`[v0] Polling: ${endpoint} refreshed`)
+              }
+            } catch (endpointError) {
+              console.warn(`[v0] Polling error for ${endpoint}:`, endpointError)
+            }
           }
+
+          setLastUpdate(Date.now())
         } catch (error) {
           console.error("[v0] Polling error:", error)
         }
@@ -72,7 +82,7 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
             const data = JSON.parse(event.data)
 
             if (data.type === "data-updated") {
-              console.log("[v0] Data updated, triggering refresh")
+              console.log(`[v0] ${data.file} updated, triggering refresh`)
               setLastUpdate(Date.now())
             }
           } catch (error) {

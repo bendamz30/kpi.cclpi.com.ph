@@ -4,7 +4,11 @@ import path from "path"
 export async function GET() {
   const encoder = new TextEncoder()
 
-  let lastModified = 0
+  const lastModifiedTimes = {
+    salesReports: 0,
+    users: 0,
+    salesTargets: 0,
+  }
 
   const stream = new ReadableStream({
     start(controller) {
@@ -12,23 +16,34 @@ export async function GET() {
       const data = `data: ${JSON.stringify({ type: "connected", timestamp: Date.now() })}\n\n`
       controller.enqueue(encoder.encode(data))
 
-      // Check for file changes every 2 seconds
       const interval = setInterval(async () => {
         try {
-          const salesReportsPath = path.join(process.cwd(), "data", "salesReports.json")
-          const stats = await fs.stat(salesReportsPath)
-          const currentModified = stats.mtime.getTime()
+          const filesToWatch = [
+            { key: "salesReports", path: path.join(process.cwd(), "data", "salesReports.json") },
+            { key: "users", path: path.join(process.cwd(), "data", "users.json") },
+            { key: "salesTargets", path: path.join(process.cwd(), "data", "salesTargets.json") },
+          ]
 
-          if (currentModified > lastModified) {
-            lastModified = currentModified
+          for (const file of filesToWatch) {
+            try {
+              const stats = await fs.stat(file.path)
+              const currentModified = stats.mtime.getTime()
 
-            // Send update notification
-            const updateData = `data: ${JSON.stringify({
-              type: "data-updated",
-              timestamp: Date.now(),
-              file: "salesReports.json",
-            })}\n\n`
-            controller.enqueue(encoder.encode(updateData))
+              if (currentModified > lastModifiedTimes[file.key]) {
+                lastModifiedTimes[file.key] = currentModified
+
+                // Send update notification
+                const updateData = `data: ${JSON.stringify({
+                  type: "data-updated",
+                  timestamp: Date.now(),
+                  file: `${file.key}.json`,
+                })}\n\n`
+                controller.enqueue(encoder.encode(updateData))
+              }
+            } catch (fileError) {
+              // File might not exist yet, continue checking other files
+              console.warn(`File ${file.path} not found:`, fileError.message)
+            }
           }
         } catch (error) {
           console.error("Error checking file changes:", error)

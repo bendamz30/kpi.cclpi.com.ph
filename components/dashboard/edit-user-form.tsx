@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { useRealTime } from "@/components/providers/real-time-provider"
 
 interface Area {
   areaId: number
@@ -52,6 +53,7 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const { triggerRefresh } = useRealTime()
 
   useEffect(() => {
     fetchDropdownData()
@@ -145,6 +147,11 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
         title: "Success",
         description: `User ${result.user.name} has been updated successfully.`,
       })
+
+      if (formData.role === "regionalUser" && formData.annualTarget) {
+        console.log("[v0] User targets updated, triggering dashboard refresh")
+        triggerRefresh()
+      }
 
       onSuccess()
     } catch (error) {
