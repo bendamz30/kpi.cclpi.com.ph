@@ -1,0 +1,13 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Force scripts (JS/TS/TSX) to use LF
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# Binary files (images, icons, etc.) should not be changed
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
