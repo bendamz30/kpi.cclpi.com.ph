@@ -10,6 +10,7 @@ import { DashboardFilters } from "@/components/dashboard/dashboard-filters"
 import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboard-kpi-cards"
 import { SalesPerformanceChart } from "@/components/dashboard/sales-performance-chart"
 import { RealTimeProvider, useRealTime } from "@/components/providers/real-time-provider"
+import { SessionTimeoutProvider } from "@/components/providers/session-timeout-provider"
 import { SummaryTable } from "@/components/dashboard/summary-table"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
@@ -65,6 +66,7 @@ interface MergedReport {
 function DashboardContent() {
   const { isAuthenticated, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [kpis, setKpis] = useState<KpiType[]>([])
   const [kpiData, setKpiData] = useState<KPIData>({
     premiumActual: 0,
@@ -605,10 +607,10 @@ function DashboardContent() {
       case "dashboard":
         return (
           <ProtectedRoute requiredPermission="dashboard:view">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                <p className="text-muted-foreground">
+            <div className="space-y-2 sm:space-y-3 lg:space-y-6">
+              <div className="px-0">
+                <h2 className="text-lg sm:text-xl lg:text-3xl font-bold tracking-tight leading-tight">Dashboard</h2>
+                <p className="text-muted-foreground text-xs sm:text-sm lg:text-base leading-relaxed">
                   Monitor sales performance and track key metrics across your organization.
                 </p>
               </div>
@@ -616,10 +618,12 @@ function DashboardContent() {
               <DashboardKPICards data={kpiData} loading={loading} />
               <SummaryTable reports={filteredReports} currentFilters={currentFilters} selectedMetric="premium" />
               <SalesPerformanceChart
-                reports={filteredReports}
                 selectedSalesOfficer={currentFilters.salesRepId}
                 startDate={currentFilters.startDate}
                 endDate={currentFilters.endDate}
+                salesType={currentFilters.salesType}
+                area={currentFilters.area}
+                region={currentFilters.region}
               />
             </div>
           </ProtectedRoute>
@@ -669,10 +673,15 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <Header />
+      <Header onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
       <div className="flex">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="flex-1 p-6 pt-8">{renderContent()}</main>
+        <Sidebar 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          isMobileOpen={isMobileMenuOpen}
+          onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        />
+        <main className="flex-1 px-2 sm:px-3 lg:px-6 pt-2 sm:pt-3 lg:pt-8 pb-2 sm:pb-3 lg:pb-6 lg:ml-0">{renderContent()}</main>
       </div>
     </div>
   )
@@ -681,9 +690,11 @@ function DashboardContent() {
 export default function HomePage() {
   return (
     <AuthProvider>
-      <RealTimeProvider>
-        <DashboardContent />
-      </RealTimeProvider>
+      <SessionTimeoutProvider>
+        <RealTimeProvider>
+          <DashboardContent />
+        </RealTimeProvider>
+      </SessionTimeoutProvider>
     </AuthProvider>
   )
 }

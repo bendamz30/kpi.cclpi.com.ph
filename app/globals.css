@@ -127,3 +127,165 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Mobile-specific utilities */
+  .xs\:block {
+    @media (min-width: 475px) {
+      display: block;
+    }
+  }
+  
+  .xs\:hidden {
+    @media (min-width: 475px) {
+      display: none;
+    }
+  }
+  
+  .xs\:flex-row {
+    @media (min-width: 475px) {
+      flex-direction: row;
+    }
+  }
+  
+  .xs\:grid-cols-2 {
+    @media (min-width: 475px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  .xs\:min-w-\[120px\] {
+    @media (min-width: 475px) {
+      min-width: 120px;
+    }
+  }
+  
+  .xs\:min-w-\[160px\] {
+    @media (min-width: 475px) {
+      min-width: 160px;
+    }
+  }
+  
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Better spacing for mobile */
+    .mobile-spacing {
+      @apply space-y-4;
+    }
+    
+    /* Improve text readability on mobile */
+    .mobile-text {
+      @apply text-sm leading-relaxed;
+    }
+    
+    /* Better mobile form controls */
+    input, select, textarea {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Improve mobile card spacing */
+    .mobile-card {
+      @apply p-4 space-y-3;
+    }
+    
+    /* Better mobile table responsiveness */
+    .mobile-table {
+      @apply text-xs;
+    }
+    
+    /* Mobile-friendly shadows */
+    .mobile-shadow {
+      @apply shadow-sm;
+    }
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  @media (max-width: 768px) {
+    body {
+      overflow-x: hidden;
+    }
+    
+    /* Ensure proper mobile viewport */
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+  }
+  
+  /* Additional mobile optimizations */
+  @media (max-width: 640px) {
+    /* Smaller text on very small screens */
+    .xs-text-sm {
+      @apply text-xs;
+    }
+    
+    /* Compact mobile layouts */
+    .xs-compact {
+      @apply space-y-2;
+    }
+    
+    /* Mobile-friendly buttons */
+    .xs-button {
+      @apply h-10 px-3 text-sm;
+    }
+    
+    /* Mobile typography scale */
+    h1 {
+      @apply text-xl;
+    }
+    
+    h2 {
+      @apply text-lg;
+    }
+    
+    h3 {
+      @apply text-base;
+    }
+    
+    /* Better mobile spacing */
+    .mobile-section {
+      @apply space-y-4;
+    }
+    
+    /* Mobile card improvements */
+    .mobile-card {
+      @apply rounded-lg p-4;
+    }
+  }
+  
+  /* iPhone 14 Pro Max and similar large phones */
+  @media (max-width: 430px) {
+    /* Ultra-compact for very small screens */
+    .xs-ultra-compact {
+      @apply space-y-2 p-3;
+    }
+    
+    /* Smaller font sizes for very small screens */
+    .xs-ultra-text {
+      @apply text-xs;
+    }
+    
+    /* Compact buttons */
+    .xs-ultra-button {
+      @apply h-9 px-2 text-xs;
+    }
+  }
+  
+  /* Tablet optimizations */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Tablet-specific improvements */
+    .tablet-optimized {
+      @apply space-y-5;
+    }
+    
+    /* Better tablet typography */
+    .tablet-text {
+      @apply text-base;
+    }
+  }
+}

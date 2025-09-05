@@ -64,6 +64,12 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
     return new Intl.NumberFormat("en-US").format(amount)
   }
 
+  const formatNumber = (value: number): string => {
+    // Format to 2 decimal places and remove .00 if it's a whole number
+    const formatted = value.toFixed(2)
+    return formatted.endsWith('.00') ? formatted.slice(0, -3) : formatted
+  }
+
   const safeData = {
     premiumActual: data?.premiumActual || 0,
     premiumTarget: data?.premiumTarget || 0,
@@ -99,7 +105,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       target: safeData.salesCounselorTarget,
       budgetMonthly: safeData.salesCounselorBudgetMonthly,
       budgetWeekly: safeData.salesCounselorBudgetWeekly,
-      format: (val: number) => (val ?? 0).toString(),
+      format: formatNumber,
       color: "bg-emerald-500",
     },
     {
@@ -108,7 +114,7 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       target: safeData.policySoldTarget,
       budgetMonthly: safeData.policySoldBudgetMonthly,
       budgetWeekly: safeData.policySoldBudgetWeekly,
-      format: (val: number) => (val ?? 0).toString(),
+      format: formatNumber,
       color: "bg-amber-500",
     },
     {
@@ -117,13 +123,13 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       target: safeData.agencyCoopTarget,
       budgetMonthly: safeData.agencyCoopBudgetMonthly,
       budgetWeekly: safeData.agencyCoopBudgetWeekly,
-      format: (val: number) => (val ?? 0).toString(),
+      format: formatNumber,
       color: "bg-purple-500",
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
       {kpiItems.map((item) => {
         const percentage = calculatePercentage(item.actual, item.target)
         const variance = calculateVariance(item.actual, item.target)
@@ -131,53 +137,53 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
         const isPositive = variance >= 0
 
         return (
-          <div key={item.title} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-medium text-gray-700">{item.title}</h3>
-              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+          <div key={item.title} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-3 sm:p-4 lg:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
+              <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-800 truncate leading-tight">{item.title}</h3>
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${item.color} flex-shrink-0 shadow-sm`}></div>
             </div>
 
-            <div className="mb-6">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-gray-900">{item.format(item.actual)}</span>
-                <span className="text-lg text-gray-400">/ {item.format(item.target)}</span>
+            <div className="mb-2 sm:mb-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-base sm:text-lg lg:text-2xl xl:text-3xl font-bold text-gray-900 truncate leading-tight">{item.format(item.actual)}</span>
+                <span className="text-xs sm:text-sm lg:text-base text-gray-500 font-medium leading-tight">/ {item.format(item.target)}</span>
               </div>
             </div>
 
-            <div className="mb-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Monthly Budget:</span>
-                <span className="font-medium text-gray-900">{item.format(item.budgetMonthly)}</span>
+            <div className="mb-2 sm:mb-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-600 font-medium leading-tight">Monthly Target:</span>
+                <span className="font-semibold text-gray-900 text-xs truncate ml-1">{item.format(item.budgetMonthly)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Weekly Budget:</span>
-                <span className="font-medium text-gray-900">{item.format(item.budgetWeekly)}</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-600 font-medium leading-tight">Weekly Target:</span>
+                <span className="font-semibold text-gray-900 text-xs truncate ml-1">{item.format(item.budgetWeekly)}</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="text-sm font-medium text-gray-600">Progress</div>
+            <div className="space-y-1.5">
+              <div className="text-xs font-semibold text-gray-700 leading-tight">Progress</div>
 
-              <div className="w-full bg-gray-100 rounded-full h-2">
+              <div className="w-full bg-gray-100 rounded-full h-2 shadow-inner">
                 <div
-                  className={`h-2 rounded-full transition-all duration-300 ${item.color}`}
+                  className={`h-2 rounded-full transition-all duration-500 ease-out ${item.color} shadow-sm`}
                   style={{ width: `${Math.min(percentage, 100)}%` }}
                 ></div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{percentage.toFixed(2)}%</span>
-                <span className={`text-sm font-medium ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
+                <span className="text-xs text-gray-600 font-medium leading-tight">{formatNumber(percentage)}%</span>
+                <span className={`text-xs font-semibold leading-tight ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
                   {isPositive ? "+" : ""}
-                  {variance.toFixed(2)}%
+                  {formatNumber(variance)}%
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm font-medium text-gray-600">Variance</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700 leading-tight">Variance</span>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    isPositive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  className={`px-2 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                    isPositive ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-red-100 text-red-800 border border-red-200"
                   }`}
                 >
                   {isPositive ? "+" : ""}

@@ -9,7 +9,16 @@ const regionsFile = path.join(dataDir, "regions.json")
 
 // Utility: read JSON file
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"))
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.error(`File not found: ${filePath}`)
+      return []
+    }
+    return JSON.parse(fs.readFileSync(filePath, "utf8"))
+  } catch (error) {
+    console.error(`Error reading file ${filePath}:`, error)
+    return []
+  }
 }
 
 // Utility: write JSON file
@@ -20,8 +29,19 @@ function writeJson(filePath, data) {
 // GET - Fetch all users
 export async function GET() {
   try {
+    console.log("Fetching users from:", usersFile)
+    console.log("Fetching sales targets from:", salesTargetsFile)
+    
     const users = readJson(usersFile)
     const salesTargets = readJson(salesTargetsFile)
+
+    console.log("Users loaded:", users.length)
+    console.log("Sales targets loaded:", salesTargets.length)
+
+    if (!Array.isArray(users)) {
+      console.error("Users data is not an array:", users)
+      return Response.json({ error: "Invalid users data format" }, { status: 500 })
+    }
 
     const usersWithTargets = users.map((user) => {
       if (user.role === "RegionalUser") {
@@ -39,10 +59,11 @@ export async function GET() {
       return user
     })
 
+    console.log("Returning users with targets:", usersWithTargets.length)
     return Response.json(usersWithTargets)
   } catch (err) {
     console.error("Error reading users:", err)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return Response.json({ error: "Internal server error", details: err.message }, { status: 500 })
   }
 }
 

@@ -1,6 +1,9 @@
 "use client"
 
 import { useMemo } from "react"
+import { Button } from "@/components/ui/button"
+import { Download, FileText, Table } from "lucide-react"
+import { exportToPDF, exportToExcel, ExportSummary } from "@/lib/export-utils"
 
 interface SummaryTableProps {
   reports: MergedReport[]
@@ -48,6 +51,40 @@ interface AreaSummary {
 }
 
 export function SummaryTable({ reports, currentFilters, selectedMetric = "premium" }: SummaryTableProps) {
+  // Export functions
+  const handleExportPDF = () => {
+    const exportData: ExportSummary = {
+      areaSummaries: summaryData.areaSummaries,
+      totals: summaryData.totals,
+      monthsInRange: summaryData.monthsInRange,
+      filters: {
+        startDate: currentFilters.startDate,
+        endDate: currentFilters.endDate,
+        area: currentFilters.areaId,
+        region: currentFilters.regionId,
+        salesRepId: currentFilters.salesRepId ? parseInt(currentFilters.salesRepId) : undefined,
+        salesType: currentFilters.salesTypeId,
+      }
+    }
+    exportToPDF(exportData, selectedMetric)
+  }
+
+  const handleExportExcel = () => {
+    const exportData: ExportSummary = {
+      areaSummaries: summaryData.areaSummaries,
+      totals: summaryData.totals,
+      monthsInRange: summaryData.monthsInRange,
+      filters: {
+        startDate: currentFilters.startDate,
+        endDate: currentFilters.endDate,
+        area: currentFilters.areaId,
+        region: currentFilters.regionId,
+        salesRepId: currentFilters.salesRepId ? parseInt(currentFilters.salesRepId) : undefined,
+        salesType: currentFilters.salesTypeId,
+      }
+    }
+    exportToExcel(exportData, selectedMetric)
+  }
   const calculateMonthsInRange = (startDate?: string, endDate?: string): number => {
     if (!startDate || !endDate) return 12 // Default to full year if no range specified
 
@@ -153,8 +190,13 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
       totalBudgetPerMonth += areaBudgetPerMonth
     })
 
-    // Sort by area name
-    areaSummaries.sort((a, b) => a.area.localeCompare(b.area))
+    // Sort by custom order: Luzon, Visayas, Mindanao
+    const areaOrder = { "Luzon": 1, "Visayas": 2, "Mindanao": 3 }
+    areaSummaries.sort((a, b) => {
+      const orderA = areaOrder[a.area as keyof typeof areaOrder] || 999
+      const orderB = areaOrder[b.area as keyof typeof areaOrder] || 999
+      return orderA - orderB
+    })
 
     const totalAchievement =
       totalBudgetPerMonth > 0 ? Math.round((totalActual / totalBudgetPerMonth) * 100 * 100) / 100 : 0
@@ -207,31 +249,57 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Summary by Area</h3>
-        <p className="text-sm text-gray-600 mt-1">
-          {getMetricLabel()} performance aggregated by area ({summaryData.monthsInRange} months)
-        </p>
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Summary by Area</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              {getMetricLabel()} performance aggregated by area ({summaryData.monthsInRange} months)
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleExportPDF}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 text-xs sm:text-sm"
+            >
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Export PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+            <Button
+              onClick={handleExportExcel}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 text-xs sm:text-sm"
+            >
+              <Table className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Export Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {getMetricLabel()} (Actual)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Target (Annual)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Budget per Month
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Achievement %
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Variance
               </th>
             </tr>
@@ -239,17 +307,17 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
           <tbody className="bg-white divide-y divide-gray-200">
             {summaryData.areaSummaries.map((summary, index) => (
               <tr key={summary.area} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{summary.area}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">{summary.area}</td>
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right font-medium">
                   {formatNumber(summary.actual)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 text-right">
                   {formatNumber(summary.annualTarget)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 text-right">
                   {formatNumber(summary.budgetPerMonth)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
                   <span
                     className={`font-medium ${
                       summary.achievement >= 100
@@ -262,7 +330,7 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
                     {formatPercentage(summary.achievement)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
                   <span className={`font-medium ${summary.variance >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {formatNumber(summary.variance)}
                   </span>
@@ -272,17 +340,17 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
           </tbody>
           <tfoot className="bg-gray-100 border-t-2 border-gray-300">
             <tr>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{summaryData.totals.area}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900">{summaryData.totals.area}</td>
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right font-bold">
                 {formatNumber(summaryData.totals.actual)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right font-bold">
                 {formatNumber(summaryData.totals.annualTarget)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right font-bold">
                 {formatNumber(summaryData.totals.budgetPerMonth)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
                 <span
                   className={`font-bold ${
                     summaryData.totals.achievement >= 100
@@ -295,7 +363,7 @@ export function SummaryTable({ reports, currentFilters, selectedMetric = "premiu
                   {formatPercentage(summaryData.totals.achievement)}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+              <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
                 <span className={`font-bold ${summaryData.totals.variance >= 0 ? "text-green-600" : "text-red-600"}`}>
                   {formatNumber(summaryData.totals.variance)}
                 </span>

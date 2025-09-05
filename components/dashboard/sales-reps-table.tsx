@@ -246,74 +246,74 @@ export function SalesRepsTable() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <Table>
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
+                      <TableHead className="px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("reportId")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Report ID <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("salesRepName")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Sales Rep Name <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("reportDate")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Report Date <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="text-right">
+                      <TableHead className="text-right px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("premiumActual")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Premium Actual <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="text-right">
+                      <TableHead className="text-right px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("salesCounselorActual")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Sales Counselor <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="text-right">
+                      <TableHead className="text-right px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("policySoldActual")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Policy Sold <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="text-right">
+                      <TableHead className="text-right px-3 sm:px-6">
                         <Button
                           variant="ghost"
                           onClick={() => handleSort("agencyCoopActual")}
-                          className="h-auto p-0 font-semibold"
+                          className="h-auto p-0 font-semibold text-xs sm:text-sm"
                         >
                           Agency Coop <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="text-center px-3 sm:px-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -326,30 +326,30 @@ export function SalesRepsTable() {
                     ) : (
                       paginatedReports.map((report) => (
                         <TableRow key={report.reportId}>
-                          <TableCell className="font-medium">{report.reportId}</TableCell>
-                          <TableCell>{report.salesRepName}</TableCell>
-                          <TableCell>{formatDate(report.reportDate)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(report.premiumActual)}</TableCell>
-                          <TableCell className="text-right">{report.salesCounselorActual}</TableCell>
-                          <TableCell className="text-right">{report.policySoldActual}</TableCell>
-                          <TableCell className="text-right">{report.agencyCoopActual}</TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center space-x-2">
+                          <TableCell className="font-medium px-3 sm:px-6 text-xs sm:text-sm">{report.reportId}</TableCell>
+                          <TableCell className="px-3 sm:px-6 text-xs sm:text-sm">{report.salesRepName}</TableCell>
+                          <TableCell className="px-3 sm:px-6 text-xs sm:text-sm">{formatDate(report.reportDate)}</TableCell>
+                          <TableCell className="text-right px-3 sm:px-6 text-xs sm:text-sm">{formatCurrency(report.premiumActual)}</TableCell>
+                          <TableCell className="text-right px-3 sm:px-6 text-xs sm:text-sm">{report.salesCounselorActual}</TableCell>
+                          <TableCell className="text-right px-3 sm:px-6 text-xs sm:text-sm">{report.policySoldActual}</TableCell>
+                          <TableCell className="text-right px-3 sm:px-6 text-xs sm:text-sm">{report.agencyCoopActual}</TableCell>
+                          <TableCell className="text-center px-3 sm:px-6">
+                            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setEditingReport(report)}
-                                className="h-8 w-8 p-0"
+                                className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setDeletingReport(report)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -361,8 +361,8 @@ export function SalesRepsTable() {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 space-y-2 sm:space-y-0">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Showing {startIndex + 1} to {Math.min(startIndex + reportsPerPage, sortedReports.length)} of{" "}
                     {sortedReports.length} reports
                   </div>
@@ -372,11 +372,12 @@ export function SalesRepsTable() {
                       size="sm"
                       onClick={() => setCurrentPage(currentPage - 1)}
                       disabled={currentPage === 1}
+                      className="text-xs sm:text-sm"
                     >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
+                      <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Previous</span>
                     </Button>
-                    <div className="text-sm">
+                    <div className="text-xs sm:text-sm">
                       Page {currentPage} of {totalPages}
                     </div>
                     <Button
@@ -384,9 +385,10 @@ export function SalesRepsTable() {
                       size="sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
+                      className="text-xs sm:text-sm"
                     >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>

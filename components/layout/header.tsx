@@ -11,11 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { LogOut, Settings, User, Shield, Crown, Eye } from "lucide-react"
+import { LogOut, Settings, User, Shield, Crown, Eye, Menu } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { SessionStatusIndicator } from "@/components/auth/session-status-indicator"
 import Image from "next/image"
 
-export function Header() {
+interface HeaderProps {
+  onMobileMenuToggle?: () => void
+}
+
+export function Header({ onMobileMenuToggle }: HeaderProps) {
   const { user, logout } = useAuth()
 
   if (!user) return null
@@ -49,31 +54,39 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/60 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
-      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="w-full border-b border-gray-200 bg-white shadow-sm sticky top-0 z-30">
+      <div className="flex h-11 sm:h-12 lg:h-16 items-center justify-between px-2 sm:px-3 lg:px-6">
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="lg:hidden mr-1 h-7 w-7 p-0"
+          onClick={onMobileMenuToggle}
+        >
+          <Menu className="h-3.5 w-3.5" />
+        </Button>
+
         {/* Logo and Brand Section */}
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex">
-              <Image
-                src="/cclpi-plans-logo.png"
-                alt="CCLPI Plans Logo"
-                width={36}
-                height={36}
-                className="object-contain h-auto"
-              />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">CCLPI PLANS</h1>
-              <p className="text-xs font-medium text-gray-500">Sales Dashboard</p>
-            </div>
+        <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 flex-1 min-w-0">
+          <div className="flex items-center justify-center flex-shrink-0">
+            <Image
+              src="/cclpi-plans-logo.png"
+              alt="CCLPI Plans Logo"
+              width={20}
+              height={20}
+              className="object-contain h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8"
+            />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-xs sm:text-sm lg:text-lg font-bold tracking-tight text-gray-900 truncate leading-tight">CCLPI PLANS</h1>
+            <p className="text-xs font-medium text-gray-500 truncate hidden sm:block leading-tight">Sales Dashboard</p>
           </div>
         </div>
 
         {/* User Section */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 flex-shrink-0">
           {/* User Info - Desktop */}
-          <div className="hidden md:flex items-center space-x-3 rounded-lg bg-gray-50/80 px-3 py-2">
+          <div className="hidden lg:flex items-center space-x-3 rounded-lg bg-gray-50 px-3 py-2 border border-gray-200">
             <div className="flex items-center space-x-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
                 <Avatar className="h-7 w-7">
@@ -92,15 +105,18 @@ export function Header() {
             </div>
           </div>
 
+          {/* Session Status Indicator */}
+          <SessionStatusIndicator />
+
           {/* User Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
-                className="relative h-10 w-10 rounded-full border border-gray-200/60 bg-white/80 shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+                className="relative h-6 w-6 sm:h-7 sm:w-7 lg:h-9 lg:w-9 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200"
               >
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-semibold">
+                <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-7 lg:w-7">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-semibold">
                     {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>

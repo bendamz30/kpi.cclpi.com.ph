@@ -201,48 +201,50 @@ export function UsersTable() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.userId}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
-                  </TableCell>
-                  <TableCell>{getRegionName(user.regionId)}</TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(user)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredUsers.length === 0 && (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No users found
-                  </TableCell>
+                  <TableHead className="px-3 sm:px-6 text-xs sm:text-sm">Name</TableHead>
+                  <TableHead className="px-3 sm:px-6 text-xs sm:text-sm">Email</TableHead>
+                  <TableHead className="px-3 sm:px-6 text-xs sm:text-sm">Role</TableHead>
+                  <TableHead className="px-3 sm:px-6 text-xs sm:text-sm">Region</TableHead>
+                  <TableHead className="px-3 sm:px-6 text-xs sm:text-sm">Created</TableHead>
+                  <TableHead className="text-right px-3 sm:px-6 text-xs sm:text-sm">Actions</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.userId}>
+                    <TableCell className="font-medium px-3 sm:px-6 text-xs sm:text-sm">{user.name}</TableCell>
+                    <TableCell className="px-3 sm:px-6 text-xs sm:text-sm">{user.email}</TableCell>
+                    <TableCell className="px-3 sm:px-6">
+                      <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">{user.role}</Badge>
+                    </TableCell>
+                    <TableCell className="px-3 sm:px-6 text-xs sm:text-sm">{getRegionName(user.regionId)}</TableCell>
+                    <TableCell className="px-3 sm:px-6 text-xs sm:text-sm">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right px-3 sm:px-6">
+                      <div className="flex items-center justify-end space-x-1 sm:space-x-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)} className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(user)} className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

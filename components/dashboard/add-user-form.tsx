@@ -325,7 +325,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                   id="annualTarget"
                   type="number"
                   aria-label="Annual premium target amount"
-                  placeholder="12000000"
+                  placeholder="0"
                   value={formData.annualTarget}
                   onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
                   required={formData.role === "regionalUser"}
@@ -338,7 +338,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     id="salesCounselorTarget"
                     type="number"
                     aria-label="Sales counselor target count"
-                    placeholder="165"
+                    placeholder="0"
                     value={formData.salesCounselorTarget}
                     onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
                     required={formData.role === "regionalUser"}
@@ -350,7 +350,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     id="policySoldTarget"
                     type="number"
                     aria-label="Policy sold target count"
-                    placeholder="1362"
+                    placeholder="0"
                     value={formData.policySoldTarget}
                     onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
                     required={formData.role === "regionalUser"}
@@ -362,7 +362,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                     id="agencyCoopTarget"
                     type="number"
                     aria-label="Agency cooperation target count"
-                    placeholder="12"
+                    placeholder="0"
                     value={formData.agencyCoopTarget}
                     onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
                     required={formData.role === "regionalUser"}
