@@ -10,54 +10,142 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, Settings, User } from "lucide-react"
-import type { User as UserType } from "@/lib/mock-data"
+import { Badge } from "@/components/ui/badge"
+import { LogOut, Settings, User, Shield, Crown, Eye } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import Image from "next/image"
 
-interface HeaderProps {
-  user: UserType
-  onLogout: () => void
-}
+export function Header() {
+  const { user, logout } = useAuth()
 
-export function Header({ user, onLogout }: HeaderProps) {
+  if (!user) return null
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'Admin':
+      case 'SystemAdmin':
+        return <Crown className="h-3 w-3" />
+      case 'Viewer':
+        return <Eye className="h-3 w-3" />
+      case 'RegionalUser':
+        return <Shield className="h-3 w-3" />
+      default:
+        return <User className="h-3 w-3" />
+    }
+  }
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'Admin':
+      case 'SystemAdmin':
+        return 'bg-red-100 text-red-800 border-red-200'
+      case 'Viewer':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'RegionalUser':
+        return 'bg-green-100 text-green-800 border-green-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 flex">
-          <h1 className="text-xl font-bold">Sales Dashboard</h1>
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200/60 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Logo and Brand Section */}
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex">
+              <Image
+                src="/cclpi-plans-logo.png"
+                alt="CCLPI Plans Logo"
+                width={36}
+                height={36}
+                className="object-contain h-auto"
+              />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold tracking-tight text-gray-900">CCLPI PLANS</h1>
+              <p className="text-xs font-medium text-gray-500">Sales Dashboard</p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">{/* Search or other header content can go here */}</div>
+        {/* User Section */}
+        <div className="flex items-center space-x-3">
+          {/* User Info - Desktop */}
+          <div className="hidden md:flex items-center space-x-3 rounded-lg bg-gray-50/80 px-3 py-2">
+            <div className="flex items-center space-x-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-semibold">
+                    {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="flex flex-col">
+                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                <div className="flex items-center space-x-1">
+                  {getRoleIcon(user.role)}
+                  <span className="text-xs font-medium text-gray-500 capitalize">{user.role}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* User Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button 
+                variant="ghost" 
+                className="relative h-10 w-10 rounded-full border border-gray-200/60 bg-white/80 shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+              >
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>{user?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-semibold">
+                    {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuContent className="w-72" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  <p className="text-xs leading-none text-muted-foreground">Role: {user.role}</p>
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+                        {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Badge variant="outline" className={`text-xs font-medium ${getRoleColor(user.role)}`}>
+                      {getRoleIcon(user.role)}
+                      <span className="ml-1 capitalize">{user.role}</span>
+                    </Badge>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem className="cursor-pointer hover:bg-gray-50">
+                <User className="mr-3 h-4 w-4 text-gray-500" />
+                <span className="font-medium">Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
+              {(user.role === 'Admin' || user.role === 'SystemAdmin') && (
+                <DropdownMenuItem className="cursor-pointer hover:bg-gray-50">
+                  <Settings className="mr-3 h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Settings</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+              <DropdownMenuItem 
+                onClick={logout} 
+                className="cursor-pointer text-red-600 hover:bg-red-50 focus:text-red-600"
+              >
+                <LogOut className="mr-3 h-4 w-4" />
+                <span className="font-medium">Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

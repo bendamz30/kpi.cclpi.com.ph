@@ -10,9 +10,10 @@ import { DashboardFilters } from "@/components/dashboard/dashboard-filters"
 import { DashboardKPICards, type KPIData } from "@/components/dashboard/dashboard-kpi-cards"
 import { SalesPerformanceChart } from "@/components/dashboard/sales-performance-chart"
 import { RealTimeProvider, useRealTime } from "@/components/providers/real-time-provider"
-import { getStoredAuth, clearStoredAuth } from "@/lib/auth"
 import { SummaryTable } from "@/components/dashboard/summary-table"
-import type { User } from "@/lib/mock-data"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { useAuth } from "@/contexts/auth-context"
+import { AuthProvider } from "@/contexts/auth-context"
 
 interface KpiType {
   key: string
@@ -62,7 +63,7 @@ interface MergedReport {
 }
 
 function DashboardContent() {
-  const [user, setUser] = useState<User | null>(null)
+  const { isAuthenticated, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("dashboard")
   const [kpis, setKpis] = useState<KpiType[]>([])
   const [kpiData, setKpiData] = useState<KPIData>({
@@ -88,13 +89,6 @@ function DashboardContent() {
   const [currentFilters, setCurrentFilters] = useState<FilterCriteria>({})
   const { lastUpdate } = useRealTime()
 
-  useEffect(() => {
-    const auth = getStoredAuth()
-    if (auth.isAuthenticated && auth.user) {
-      setUser(auth.user)
-    }
-  }, [])
-
   const calculateMonthsInRange = (startDate?: string, endDate?: string): number => {
     if (!startDate || !endDate) return 12 // Default to full year if no range specified
 
@@ -105,6 +99,19 @@ function DashboardContent() {
     const monthDiff = end.getMonth() - start.getMonth()
 
     return Math.max(1, yearDiff * 12 + monthDiff + 1) // +1 to include both start and end months
+  }
+
+  const calculateWeeksInRange = (startDate?: string, endDate?: string): number => {
+    if (!startDate || !endDate) return 48 // Default to full year if no range specified
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const diffWeeks = Math.ceil(diffDays / 7)
+
+    return Math.max(1, diffWeeks + 1) // +1 to include both start and end weeks
   }
 
   const applyFilters = (reports: MergedReport[], filters: FilterCriteria): MergedReport[] => {
@@ -179,7 +186,9 @@ function DashboardContent() {
     })
 
     const monthsInRange = calculateMonthsInRange(currentFilters.startDate, currentFilters.endDate)
+    const weeksInRange = calculateWeeksInRange(currentFilters.startDate, currentFilters.endDate)
     const hasDateFilter = currentFilters.startDate && currentFilters.endDate
+    const granularity = currentFilters.granularity || "monthly"
 
     const totals = {
       premiumActual: 0,
@@ -224,15 +233,25 @@ function DashboardContent() {
       const annualPolicySoldTarget = (firstReport as any)._annualPolicySoldTarget || 0
       const annualAgencyCoopTarget = (firstReport as any)._annualAgencyCoopTarget || 0
 
-      // Calculate targets based on filter
+      // Calculate targets based on filter and granularity
       let repTargets
       if (hasDateFilter) {
-        // When date filter is applied, calculate based on months in range
-        repTargets = {
-          premiumTarget: Math.round((annualPremiumTarget / 12) * monthsInRange * 100) / 100,
-          salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * monthsInRange * 100) / 100,
-          policySoldTarget: Math.round((annualPolicySoldTarget / 12) * monthsInRange * 100) / 100,
-          agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * monthsInRange * 100) / 100,
+        if (granularity === "weekly") {
+          // Weekly mode: Annual Target ÷ 48 × number of weeks in range
+          repTargets = {
+            premiumTarget: Math.round((annualPremiumTarget / 48) * weeksInRange * 100) / 100,
+            salesCounselorTarget: Math.round((annualSalesCounselorTarget / 48) * weeksInRange * 100) / 100,
+            policySoldTarget: Math.round((annualPolicySoldTarget / 48) * weeksInRange * 100) / 100,
+            agencyCoopTarget: Math.round((annualAgencyCoopTarget / 48) * weeksInRange * 100) / 100,
+          }
+        } else {
+          // Monthly mode: Annual Target ÷ 12 × number of months in range
+          repTargets = {
+            premiumTarget: Math.round((annualPremiumTarget / 12) * monthsInRange * 100) / 100,
+            salesCounselorTarget: Math.round((annualSalesCounselorTarget / 12) * monthsInRange * 100) / 100,
+            policySoldTarget: Math.round((annualPolicySoldTarget / 12) * monthsInRange * 100) / 100,
+            agencyCoopTarget: Math.round((annualAgencyCoopTarget / 12) * monthsInRange * 100) / 100,
+          }
         }
       } else {
         // Default (no filter) - show sum of all annual targets
@@ -409,6 +428,47 @@ function DashboardContent() {
 
           return mergedReport
         })
+
+        // Add placeholder reports for users who have targets but no actual reports
+        const usersWithTargetsOnly = users.filter((user: any) => {
+          const hasReports = salesReports.some((report: any) => Number(report.salesRepId) === Number(user.userId))
+          const hasTargets = targets.some((target: any) => Number(target.salesRepId) === Number(user.userId))
+          return !hasReports && hasTargets && user.role === "RegionalUser"
+        })
+
+        const placeholderReports = usersWithTargetsOnly.map((user: any) => {
+          const target = targets.find((t: any) => Number(t.salesRepId) === Number(user.userId))
+          const area = areas.find((a: any) => Number(a.areaId) === Number(user.areaId))
+          const region = regions.find((r: any) => Number(r.regionId) === Number(user.regionId))
+          const salesType = salesTypes.find((st: any) => Number(st.salesTypeId) === Number(user.salesTypeId))
+
+          return {
+            reportId: `placeholder-${user.userId}`,
+            salesRepId: Number(user.userId),
+            reportDate: new Date().toISOString().split('T')[0],
+            premiumActual: 0,
+            salesCounselorActual: 0,
+            policySoldActual: 0,
+            agencyCoopActual: 0,
+            areaId: Number(user.areaId) || 0,
+            regionId: Number(user.regionId) || 0,
+            salesTypeId: Number(user.salesTypeId) || 0,
+            areaName: area?.areaName || "Unknown",
+            regionName: region?.regionName || "Unknown",
+            salesTypeName: salesType?.salesTypeName || "Unknown",
+            userName: user.name || "Unknown",
+            premiumTarget: 0,
+            salesCounselorTarget: 0,
+            policySoldTarget: 0,
+            agencyCoopTarget: 0,
+            _annualPremiumTarget: Number(target?.premiumTarget) || 0,
+            _annualSalesCounselorTarget: Number(target?.salesCounselorTarget) || 0,
+            _annualPolicySoldTarget: Number(target?.policySoldTarget) || 0,
+            _annualAgencyCoopTarget: Number(target?.agencyCoopTarget) || 0,
+          }
+        })
+
+        reports = [...reports, ...placeholderReports]
       }
 
       setMergedReports(reports)
@@ -515,15 +575,6 @@ function DashboardContent() {
     return result
   }
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser)
-  }
-
-  const handleLogout = () => {
-    clearStoredAuth()
-    setUser(null)
-    setActiveTab("dashboard")
-  }
 
   const handleFiltersChange = async (filters: any) => {
     setLoading(true)
@@ -547,62 +598,81 @@ function DashboardContent() {
   }
 
   const renderContent = () => {
+    // Apply current filters to get filtered reports
+    const filteredReports = applyFilters(mergedReports, currentFilters)
+    
     switch (activeTab) {
       case "dashboard":
         return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">
-                Monitor sales performance and track key metrics across your organization.
-              </p>
+          <ProtectedRoute requiredPermission="dashboard:view">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                <p className="text-muted-foreground">
+                  Monitor sales performance and track key metrics across your organization.
+                </p>
+              </div>
+              <DashboardFilters onFiltersChange={handleFiltersChange} />
+              <DashboardKPICards data={kpiData} loading={loading} />
+              <SummaryTable reports={filteredReports} currentFilters={currentFilters} selectedMetric="premium" />
+              <SalesPerformanceChart
+                reports={filteredReports}
+                selectedSalesOfficer={currentFilters.salesRepId}
+                startDate={currentFilters.startDate}
+                endDate={currentFilters.endDate}
+              />
             </div>
-            <DashboardFilters onFiltersChange={handleFiltersChange} />
-            <DashboardKPICards data={kpiData} loading={loading} />
-            <SummaryTable reports={mergedReports} currentFilters={currentFilters} selectedMetric="premium" />
-            <SalesPerformanceChart
-              reports={mergedReports}
-              selectedSalesOfficer={currentFilters.salesRepId}
-              startDate={currentFilters.startDate}
-              endDate={currentFilters.endDate}
-            />
-          </div>
+          </ProtectedRoute>
         )
       case "sales-reps":
         return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Sales Representatives</h2>
-              <p className="text-muted-foreground">Manage your sales team and track their performance.</p>
+          <ProtectedRoute requiredPermission="sales-reps:view">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Sales Representatives</h2>
+                <p className="text-muted-foreground">Manage your sales team and track their performance.</p>
+              </div>
+              <SalesRepsTable />
             </div>
-            <SalesRepsTable />
-          </div>
+          </ProtectedRoute>
         )
       case "users":
         return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Users</h2>
-              <p className="text-muted-foreground">Manage system users and their access permissions.</p>
+          <ProtectedRoute requiredPermission="users:view">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Users</h2>
+                <p className="text-muted-foreground">Manage system users and their access permissions.</p>
+              </div>
+              <UsersTable />
             </div>
-            <UsersTable />
-          </div>
+          </ProtectedRoute>
         )
       default:
         return null
     }
   }
 
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return <LoginForm />
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gray-50/50">
+      <Header />
       <div className="flex">
-        <Sidebar user={user} activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="flex-1 p-6">{renderContent()}</main>
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1 p-6 pt-8">{renderContent()}</main>
       </div>
     </div>
   )
@@ -610,8 +680,10 @@ function DashboardContent() {
 
 export default function HomePage() {
   return (
-    <RealTimeProvider>
-      <DashboardContent />
-    </RealTimeProvider>
+    <AuthProvider>
+      <RealTimeProvider>
+        <DashboardContent />
+      </RealTimeProvider>
+    </AuthProvider>
   )
 }

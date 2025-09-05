@@ -1,62 +1,62 @@
 [
   {
-    "targetId": 201,
-    "salesRepId": 101,
-    "year": 2025,
-    "premiumTarget": 12000000.0,
-    "salesCounselorTarget": 165,
-    "policySoldTarget": 1362,
-    "agencyCoopTarget": 12,
-    "createdBy": 1,
-    "createdAt": "2025-01-01T00:00:00Z",
-    "updatedAt": null
-  },
-  {
-    "targetId": 202,
-    "salesRepId": 102,
-    "year": 2025,
-    "premiumTarget": 50000.0,
-    "salesCounselorTarget": 10,
-    "policySoldTarget": 50,
-    "agencyCoopTarget": 5,
-    "createdBy": 1,
-    "createdAt": "2025-01-01T00:00:00Z",
-    "updatedAt": null
-  },
-  {
     "targetId": 203,
     "salesRepId": 103,
     "year": 2025,
-    "premiumTarget": 30000.0,
-    "salesCounselorTarget": 8,
-    "policySoldTarget": 30,
-    "agencyCoopTarget": 3,
+    "premiumTarget": 36000000,
+    "salesCounselorTarget": 120,
+    "policySoldTarget": 2246,
+    "agencyCoopTarget": 0,
     "createdBy": 1,
     "createdAt": "2025-01-01T00:00:00Z",
-    "updatedAt": null
+    "updatedAt": "2025-09-03T05:51:36.479Z"
   },
   {
     "targetId": 204,
     "salesRepId": 104,
     "year": 2025,
-    "premiumTarget": 60000.0,
+    "premiumTarget": 60000,
     "salesCounselorTarget": 15,
     "policySoldTarget": 60,
     "agencyCoopTarget": 6,
     "createdBy": 1,
     "createdAt": "2025-01-01T00:00:00Z",
-    "updatedAt": null
+    "updatedAt": "2025-09-03T09:13:47.224Z"
   },
   {
     "targetId": 205,
     "salesRepId": 105,
     "year": 2025,
-    "premiumTarget": 100000.0,
-    "salesCounselorTarget": 20,
-    "policySoldTarget": 100,
-    "agencyCoopTarget": 10,
+    "premiumTarget": 12000000,
+    "salesCounselorTarget": 120,
+    "policySoldTarget": 480,
+    "agencyCoopTarget": 0,
     "createdBy": 1,
-    "createdAt": "2025-01-01T00:00:00Z",
+    "createdAt": "2025-09-03T09:00:07.778Z",
     "updatedAt": null
+  },
+  {
+    "targetId": 206,
+    "salesRepId": 106,
+    "year": 2025,
+    "premiumTarget": 25000000,
+    "salesCounselorTarget": 250,
+    "policySoldTarget": 1250,
+    "agencyCoopTarget": 0,
+    "createdBy": 1,
+    "createdAt": "2025-09-04T00:59:56.373Z",
+    "updatedAt": null
+  },
+  {
+    "targetId": 207,
+    "salesRepId": 107,
+    "year": 2025,
+    "premiumTarget": 15000000,
+    "salesCounselorTarget": 150,
+    "policySoldTarget": 850,
+    "agencyCoopTarget": 0,
+    "createdBy": 1,
+    "createdAt": "2025-09-04T01:05:49.102Z",
+    "updatedAt": "2025-09-04T01:06:23.353Z"
   }
 ]

@@ -4,7 +4,7 @@ export interface User {
   name: string
   email: string
   passwordHash: string
-  role: "Admin" | "Viewer" | "RegionalUser"
+  role: "Admin" | "SystemAdmin" | "Viewer" | "RegionalUser"
   regionId?: number | null
   createdAt: string
   updatedAt: string | null

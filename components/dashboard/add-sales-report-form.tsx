@@ -18,6 +18,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from "@/contexts/auth-context"
+import type { User } from "@/lib/mock-data"
 
 interface AddSalesReportFormProps {
   onSuccess: () => void
@@ -25,6 +27,7 @@ interface AddSalesReportFormProps {
 }
 
 export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormProps) {
+  const { hasPermission } = useAuth()
   const [formData, setFormData] = useState({
     salesRepId: "",
     reportDate: new Date().toISOString().split("T")[0], // Default to today's date
@@ -33,7 +36,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
     policySoldActual: "",
     agencyCoopActual: "",
   })
-  const [regionalUsers, setRegionalUsers] = useState([]) // Fetch users dynamically
+  const [regionalUsers, setRegionalUsers] = useState<User[]>([]) // Fetch users dynamically
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
@@ -44,7 +47,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
         const response = await fetch("/api/users")
         if (response.ok) {
           const users = await response.json()
-          const regUsers = users.filter((user) => user.role === "RegionalUser")
+          const regUsers = users.filter((user: User) => user.role === "RegionalUser")
           setRegionalUsers(regUsers)
         }
       } catch (error) {
@@ -123,7 +126,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
     if (successMessage) setSuccessMessage("")
   }
 
-  const ConfirmSubmit = ({ children }) => (
+  const ConfirmSubmit = ({ children }: { children: React.ReactNode }) => (
     <AlertDialog>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
@@ -140,6 +143,22 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
       </AlertDialogContent>
     </AlertDialog>
   )
+
+  // Check if user has permission to create reports
+  if (!hasPermission('reports:create')) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Sales Report</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">You don't have permission to create sales reports.</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -163,7 +182,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
                   <SelectValue placeholder="Select sales rep" />
                 </SelectTrigger>
                 <SelectContent>
-                  {regionalUsers.map((user) => (
+                  {regionalUsers.map((user: User) => (
                     <SelectItem key={user.userId} value={user.userId.toString()}>
                       {user.name}
                     </SelectItem>

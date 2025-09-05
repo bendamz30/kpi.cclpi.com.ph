@@ -48,6 +48,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
     salesOfficer: "all",
     startDate: "",
     endDate: "",
+    granularity: "monthly"
   })
 
   const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
@@ -57,69 +58,61 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
     fetchDropdownData()
   }, [])
 
+  // Filter regions based on selected area
   useEffect(() => {
-    // Filter regions by selected area
     if (filters.area && filters.area !== "all") {
       const filtered = regions.filter((region) => Number(region.areaId) === Number(filters.area))
       setFilteredRegions(filtered)
-
-      // Clear region if it's not in the new filtered list
-      if (filters.region && !filtered.find((r) => r.regionId.toString() === filters.region)) {
-        setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
+      
+      // Clear region and sales officer if current selection is not valid
+      if (filters.region && filters.region !== "all") {
+        const regionExists = filtered.find((r) => r.regionId.toString() === filters.region)
+        if (!regionExists) {
+          setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
+        }
       }
     } else {
       setFilteredRegions([])
+      // Clear region and sales officer when area is "all"
       setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
     }
   }, [filters.area, regions])
 
+  // Filter sales officers based on all criteria
   useEffect(() => {
-    console.debug(
-      "[v0] computeOfficerOptions -> areaId=",
-      filters.area,
-      "regionId=",
-      filters.region,
-      "salesType=",
-      filters.salesType,
-    )
+    let filtered = salesOfficers.filter((officer) => officer.role === "RegionalUser")
 
-    let filtered = salesOfficers
-
+    // Filter by sales type
     if (filters.salesType && filters.salesType !== "all") {
       filtered = filtered.filter((officer) => Number(officer.salesTypeId) === Number(filters.salesType))
-      console.debug("[v0] After sales type filter:", filtered.length, "officers")
     }
 
+    // Filter by area
     if (filters.area && filters.area !== "all") {
-      filtered = filtered.filter((officer) => {
-        const officerRegion = regions.find((region) => Number(region.regionId) === Number(officer.regionId))
-        return officerRegion && Number(officerRegion.areaId) === Number(filters.area)
-      })
-      console.debug("[v0] After area filter:", filtered.length, "officers")
+      filtered = filtered.filter((officer) => Number(officer.areaId) === Number(filters.area))
     }
 
-    // Then filter by Region if selected
+    // Filter by region
     if (filters.region && filters.region !== "all") {
       filtered = filtered.filter((officer) => Number(officer.regionId) === Number(filters.region))
-      console.debug("[v0] After region filter:", filtered.length, "officers")
     }
 
-    console.debug("[v0] computeOfficerOptions -> optionsCount=", filtered.length)
     setFilteredSalesOfficers(filtered)
 
     // Clear sales officer selection if current selection is not in filtered list
-    if (
-      filters.salesOfficer &&
-      filters.salesOfficer !== "all" &&
-      !filtered.find((o) => o.userId.toString() === filters.salesOfficer)
-    ) {
-      console.debug("[v0] Clearing sales officer selection - not in filtered list")
-      setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
+    if (filters.salesOfficer && filters.salesOfficer !== "all") {
+      const officerExists = filtered.find((o) => o.userId.toString() === filters.salesOfficer)
+      if (!officerExists) {
+        setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
+      }
     }
-  }, [filters.area, filters.region, filters.salesType, salesOfficers])
+  }, [filters.salesType, filters.area, filters.region, salesOfficers])
 
+  // Clear dependent filters when sales type changes
   useEffect(() => {
-    setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
+    if (filters.salesType !== "all") {
+      setFilters((prev) => ({ ...prev, area: "all", region: "all", salesOfficer: "all" }))
+    }
   }, [filters.salesType])
 
   const fetchDropdownData = async () => {
@@ -139,23 +132,21 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
         usersRes.json(),
       ])
 
-      const regionalUsers = usersData.filter((user: User) => user.role === "RegionalUser")
       console.debug(
         "[v0] loaded counts: users=",
         usersData.length,
-        ", reports=N/A, targets=N/A, areas=",
+        ", areas=",
         areasData.length,
         ", regions=",
         regionsData.length,
         ", salesTypes=",
         salesTypesData.length,
       )
-      console.debug("[v0] RegionalUser officers:", regionalUsers.length)
 
       setAreas(areasData)
       setRegions(regionsData)
       setSalesTypes(salesTypesData)
-      setSalesOfficers(regionalUsers)
+      setSalesOfficers(usersData)
     } catch (error) {
       console.error("[v0] Error fetching dropdown data:", error)
     }
@@ -173,6 +164,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       salesOfficer: "all",
       startDate: "",
       endDate: "",
+      granularity: "monthly"
     }
     setFilters(resetFilters)
   }
@@ -180,6 +172,14 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
   const handleApplyFilter = () => {
     console.debug("[v0] applyFilters called with filters:", filters)
     onFiltersChange(filters)
+  }
+
+  // Validate date range
+  const isDateRangeValid = () => {
+    if (filters.startDate && filters.endDate) {
+      return new Date(filters.startDate) <= new Date(filters.endDate)
+    }
+    return true
   }
 
   return (
@@ -251,7 +251,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
           >
             <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-50 disabled:text-gray-400">
               <SelectValue
-                placeholder={filteredSalesOfficers.length === 0 ? "No sales officers" : "Select sales officer"}
+                placeholder={filteredSalesOfficers.length === 0 ? "No sales officers available" : "Select sales officer"}
               />
             </SelectTrigger>
             <SelectContent>
@@ -278,7 +278,9 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             type="date"
             value={filters.startDate}
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
-            className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className={`rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+              !isDateRangeValid() ? 'border-red-500' : ''
+            }`}
           />
         </div>
 
@@ -289,8 +291,23 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             type="date"
             value={filters.endDate}
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className={`rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+              !isDateRangeValid() ? 'border-red-500' : ''
+            }`}
           />
+        </div>
+
+        <div className="space-y-2 min-w-[140px]">
+          <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Granularity</label>
+          <Select value={filters.granularity} onValueChange={(value) => handleFilterChange("granularity", value)}>
+            <SelectTrigger className="rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+              <SelectValue placeholder="Select granularity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex gap-3 ml-auto">
@@ -304,13 +321,20 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
           </Button>
           <Button
             onClick={handleApplyFilter}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors"
+            disabled={!isDateRangeValid()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             <Filter className="w-4 h-4 mr-2" />
             Apply Filter
           </Button>
         </div>
       </div>
+      
+      {!isDateRangeValid() && (
+        <div className="text-red-500 text-sm mt-2">
+          Start date must be before or equal to end date
+        </div>
+      )}
     </div>
   )
 }

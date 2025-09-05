@@ -3,25 +3,42 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Users, ChevronLeft, ChevronRight, Home, UserCheck } from "lucide-react"
-import type { User } from "@/lib/mock-data"
+import { Users, ChevronLeft, ChevronRight, Home, UserCheck, Shield } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
-interface SidebarProps {
-  user: User
-  activeTab: string
-  onTabChange: (tab: string) => void
-}
-
-export function Sidebar({ user, activeTab, onTabChange }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
   const [collapsed, setCollapsed] = useState(false)
+  const { user, hasPermission } = useAuth()
+
+  if (!user) return null
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, roles: ["Admin", "Viewer", "RegionalUser"] },
-    { id: "sales-reps", label: "Sales Reps", icon: Users, roles: ["Admin", "RegionalUser"] },
-    { id: "users", label: "Users", icon: UserCheck, roles: ["Admin"] },
+    { 
+      id: "dashboard", 
+      label: "Dashboard", 
+      icon: Home, 
+      permission: "dashboard:view",
+      roles: ["Admin", "SystemAdmin", "Viewer", "RegionalUser"] 
+    },
+    { 
+      id: "sales-reps", 
+      label: "Sales Reps", 
+      icon: Users, 
+      permission: "sales-reps:view",
+      roles: ["Admin", "SystemAdmin", "RegionalUser"] 
+    },
+    { 
+      id: "users", 
+      label: "Users", 
+      icon: UserCheck, 
+      permission: "users:view",
+      roles: ["Admin", "SystemAdmin"] 
+    },
   ]
 
-  const filteredMenuItems = menuItems.filter((item) => item.roles.includes(user.role))
+  const filteredMenuItems = menuItems.filter((item) => 
+    item.roles.includes(user.role) && hasPermission(item.permission)
+  )
 
   return (
     <div

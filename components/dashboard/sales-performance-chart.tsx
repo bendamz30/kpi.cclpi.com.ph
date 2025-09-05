@@ -60,6 +60,21 @@ export function SalesPerformanceChart({
   const [selectedMetric, setSelectedMetric] = useState("premium")
   const [timePeriod, setTimePeriod] = useState("monthly")
 
+  const selectedMetricConfig = METRIC_OPTIONS.find((option) => option.value === selectedMetric)
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
+
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat("en-US").format(value)
+  }
+
   const chartData = useMemo(() => {
     let filteredReports = reports
     if (selectedSalesOfficer && selectedSalesOfficer !== "all") {
@@ -136,8 +151,6 @@ export function SalesPerformanceChart({
         }
       })
   }, [reports, selectedSalesOfficer, selectedMetric, startDate, endDate, timePeriod])
-
-  const selectedMetricConfig = METRIC_OPTIONS.find((m) => m.value === selectedMetric)
 
   return (
     <Card>
