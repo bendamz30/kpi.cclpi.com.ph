@@ -14,7 +14,7 @@ if not exist .env.production (
 
 REM Install dependencies
 echo Installing npm dependencies...
-call npm ci --production=false
+call npm ci --production=false --legacy-peer-deps
 
 REM Run build
 echo Building Next.js application...

@@ -17,6 +17,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'kpiapi.cclpi.com.ph',
+        pathname: '/storage/**',
+      },
+      {
+        protocol: 'https',
         hostname: '**',
       },
     ],
@@ -28,7 +33,7 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Removed output: 'export' to allow API routes to work
-  // output: 'export'
+  // output: 'export'  // Uncomment only if you want static export
 };
 
 export default nextConfig;

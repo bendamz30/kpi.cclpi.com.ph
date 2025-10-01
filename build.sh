@@ -15,7 +15,7 @@ fi
 
 # Install dependencies
 echo "Installing npm dependencies..."
-npm ci --production=false
+npm ci --production=false --legacy-peer-deps
 
 # Run build
 echo "Building Next.js application..."
