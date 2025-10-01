@@ -238,24 +238,29 @@ function DashboardContent() {
         endDate: activeFilters.endDate
       })
       
-      // Build query parameters for hierarchical API
-      const params = new URLSearchParams({
-        start: activeFilters.startDate || '',
-        end: activeFilters.endDate || '',
-        year: new Date().getFullYear().toString()
-      })
+      // Build query parameters for hierarchical API - only include non-empty values
+      const params = new URLSearchParams()
       
-      // Add filter parameters if they're not "all" or empty
-      if (activeFilters.salesTypeId && activeFilters.salesTypeId !== 'all') {
+      // Add required date parameters only if they have values
+      if (activeFilters.startDate) {
+        params.append('start', activeFilters.startDate)
+      }
+      if (activeFilters.endDate) {
+        params.append('end', activeFilters.endDate)
+      }
+      params.append('year', new Date().getFullYear().toString())
+      
+      // Add filter parameters if they're not "all", null, undefined, or empty
+      if (activeFilters.salesTypeId && activeFilters.salesTypeId !== 'all' && activeFilters.salesTypeId !== '') {
         params.append('salesTypeId', activeFilters.salesTypeId)
       }
-      if (activeFilters.areaId && activeFilters.areaId !== 'all') {
+      if (activeFilters.areaId && activeFilters.areaId !== 'all' && activeFilters.areaId !== '') {
         params.append('areaId', activeFilters.areaId)
       }
-      if (activeFilters.regionId && activeFilters.regionId !== 'all') {
+      if (activeFilters.regionId && activeFilters.regionId !== 'all' && activeFilters.regionId !== '') {
         params.append('regionId', activeFilters.regionId)
       }
-      if (activeFilters.salesRepId && activeFilters.salesRepId !== 'all') {
+      if (activeFilters.salesRepId && activeFilters.salesRepId !== 'all' && activeFilters.salesRepId !== '') {
         params.append('salesRepId', activeFilters.salesRepId)
       }
       

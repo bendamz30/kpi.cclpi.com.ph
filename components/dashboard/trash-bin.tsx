@@ -97,11 +97,16 @@ export function TrashBin() {
   const fetchDeletedUsers = async (page = 1, search = "") => {
     try {
       setLoading(true)
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: '15'
-      })
-      if (search) params.append('search', search)
+      const params = new URLSearchParams()
+      
+      // Only add non-empty parameters
+      if (page) {
+        params.append('page', page.toString())
+      }
+      params.append('per_page', '15')
+      if (search && search.trim() !== '') {
+        params.append('search', search.trim())
+      }
       
       const response = await apiService.fetchData(`/trash/users?${params}`)
       setDeletedUsers(response.data.data)
@@ -123,11 +128,16 @@ export function TrashBin() {
   const fetchDeletedSalesReports = async (page = 1, search = "") => {
     try {
       setLoading(true)
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: '15'
-      })
-      if (search) params.append('search', search)
+      const params = new URLSearchParams()
+      
+      // Only add non-empty parameters
+      if (page) {
+        params.append('page', page.toString())
+      }
+      params.append('per_page', '15')
+      if (search && search.trim() !== '') {
+        params.append('search', search.trim())
+      }
       
       const response = await apiService.fetchData(`/trash/sales-reports?${params}`)
       setDeletedSalesReports(response.data.data)
