@@ -8,6 +8,8 @@ export interface User {
   regionId?: number | null
   createdAt: string
   updatedAt: string | null
+  profile_picture?: string | null
+  profile_picture_url?: string | null
 }
 
 export interface Area {

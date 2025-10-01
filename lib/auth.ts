@@ -12,7 +12,12 @@ export const getStoredAuth = (): AuthState => {
 
   const stored = localStorage.getItem("auth")
   if (stored) {
-    return JSON.parse(stored)
+    try {
+      return JSON.parse(stored)
+    } catch (error) {
+      console.error("Error parsing auth data:", error)
+      localStorage.removeItem("auth")
+    }
   }
   return { user: null, isAuthenticated: false }
 }

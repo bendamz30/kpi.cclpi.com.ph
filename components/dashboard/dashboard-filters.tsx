@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Filter, RotateCcw } from "lucide-react"
+import { Filter, RotateCcw, Calendar, RefreshCw } from "lucide-react"
 
 interface FilterProps {
   onFiltersChange: (filters: any) => void
+  onRefreshDropdowns?: (refreshFn: () => void) => void
 }
 
 interface Area {
@@ -35,27 +36,73 @@ interface User {
   salesTypeId: number
 }
 
-export function DashboardFilters({ onFiltersChange }: FilterProps) {
+export function DashboardFilters({ onFiltersChange, onRefreshDropdowns }: FilterProps) {
   const [areas, setAreas] = useState<Area[]>([])
   const [regions, setRegions] = useState<Region[]>([])
   const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
   const [salesOfficers, setSalesOfficers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Set default date range to August to December of current year
+  const getDefaultDateRange = () => {
+    const currentYear = new Date().getFullYear()
+    return {
+      startDate: `${currentYear}-08-01`, // August 1st
+      endDate: `${currentYear}-12-31`    // December 31st
+    }
+  }
 
   const [filters, setFilters] = useState({
     salesType: "all",
     area: "all",
     region: "all",
     salesOfficer: "all",
-    startDate: "",
-    endDate: ""
+    ...getDefaultDateRange()
   })
 
   const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
   const [filteredSalesOfficers, setFilteredSalesOfficers] = useState<User[]>([])
+  const isRefreshingRef = useRef(false)
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     fetchDropdownData()
   }, [])
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Create a stable refresh function
+  const refreshDropdowns = useCallback(() => {
+    if (isRefreshingRef.current) {
+      console.log("[v0] ⏸️ Already refreshing, skipping...")
+      return
+    }
+    isRefreshingRef.current = true
+    console.log("[v0] 🔄 Refreshing dropdown data...")
+    fetchDropdownData(true).finally(() => {
+      isRefreshingRef.current = false
+    })
+  }, [])
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshDropdowns) {
+      onRefreshDropdowns(refreshDropdowns)
+    }
+  }, [onRefreshDropdowns, refreshDropdowns])
+
+  // Debug: Log areas state changes
+  useEffect(() => {
+    console.log("[v0] Areas state changed:", areas)
+    console.log("[v0] Areas length:", areas.length)
+  }, [areas])
 
   // Filter regions based on selected area
   useEffect(() => {
@@ -65,7 +112,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       
       // Clear region and sales officer if current selection is not valid
       if (filters.region && filters.region !== "all") {
-        const regionExists = filtered.find((r) => r.regionId.toString() === filters.region)
+        const regionExists = filtered.find((r) => (r.regionId == null ? '' : String(r.regionId)) === filters.region)
         if (!regionExists) {
           setFilters((prev) => ({ ...prev, region: "all", salesOfficer: "all" }))
         }
@@ -79,28 +126,37 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
 
   // Filter sales officers based on all criteria
   useEffect(() => {
+    console.log("[v0] 🔍 Filtering sales officers...")
+    console.log("[v0] All sales officers:", salesOfficers)
+    console.log("[v0] Current filters:", filters)
+    
     let filtered = salesOfficers.filter((officer) => officer.role === "RegionalUser")
+    console.log("[v0] After RegionalUser filter:", filtered)
 
     // Filter by sales type
     if (filters.salesType && filters.salesType !== "all") {
       filtered = filtered.filter((officer) => Number(officer.salesTypeId) === Number(filters.salesType))
+      console.log("[v0] After sales type filter:", filtered)
     }
 
     // Filter by area
     if (filters.area && filters.area !== "all") {
       filtered = filtered.filter((officer) => Number(officer.areaId) === Number(filters.area))
+      console.log("[v0] After area filter:", filtered)
     }
 
     // Filter by region
     if (filters.region && filters.region !== "all") {
       filtered = filtered.filter((officer) => Number(officer.regionId) === Number(filters.region))
+      console.log("[v0] After region filter:", filtered)
     }
 
+    console.log("[v0] Final filtered sales officers:", filtered)
     setFilteredSalesOfficers(filtered)
 
     // Clear sales officer selection if current selection is not in filtered list
     if (filters.salesOfficer && filters.salesOfficer !== "all") {
-      const officerExists = filtered.find((o) => o.userId.toString() === filters.salesOfficer)
+      const officerExists = filtered.find((o) => (o.userId == null ? '' : String(o.userId)) === filters.salesOfficer)
       if (!officerExists) {
         setFilters((prev) => ({ ...prev, salesOfficer: "all" }))
       }
@@ -114,22 +170,101 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
     }
   }, [filters.salesType])
 
-  const fetchDropdownData = async () => {
+  const fetchDropdownData = async (forceRefresh = false) => {
     try {
-      console.debug("[v0] Fetching dropdown data...")
-      const [areasRes, regionsRes, salesTypesRes, usersRes] = await Promise.all([
-        fetch("/api/areas"),
-        fetch("/api/regions"),
-        fetch("/api/sales-types"),
-        fetch("/api/users"),
-      ])
+      console.debug("[v0] Fetching dropdown data...", forceRefresh ? "(forced refresh)" : "")
+      
+      // Skip cache if force refresh is requested
+      if (!forceRefresh) {
+        // Check cache first (1 minute cache - reduced from 5 minutes)
+        const cacheKey = 'dashboard-dropdown-data'
+        const cached = localStorage.getItem(cacheKey)
+        const cacheTime = localStorage.getItem(cacheKey + '-time')
+        const now = Date.now()
+        
+        if (cached && cacheTime && (now - parseInt(cacheTime)) < 60000) { // 1 minute
+          console.log("[v0] Using cached dropdown data")
+          try {
+            const data = JSON.parse(cached)
+            setAreas(data.areas || [])
+            setRegions(data.regions || [])
+            setSalesTypes(data.salesTypes || [])
+            setSalesOfficers(data.salesOfficers || [])
+            setIsLoading(false)
+            return
+          } catch (error) {
+            console.error("[v0] Error parsing cached dropdown data:", error)
+            // Clear corrupted cache
+            localStorage.removeItem('dropdown-data')
+            localStorage.removeItem('dropdown-data-time')
+          }
+        }
+      }
+      
+      // Helper function to safely fetch with proper error handling
+      const safeFetch = async (url: string, retries = 3): Promise<any> => {
+        for (let attempt = 0; attempt < retries; attempt++) {
+          try {
+            let response;
+            try {
+              response = await fetch(url, {
+                headers: { 
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                }
+              });
+            } catch (e) {
+              throw new Error('Network error: ' + e.message);
+            }
+            
+            if (response.status === 429) {
+              // Rate limited - exponential backoff
+              const waitTime = Math.pow(2, attempt) * 1000 // 1s, 2s, 4s
+              console.warn(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${retries}`)
+              await new Promise(r => setTimeout(r, waitTime))
+              continue
+            }
+            
+            if (!response.ok) {
+              const text = await response.text()
+              console.error(`HTTP ${response.status} for ${url}: ${text.slice(0, 200)}`)
+              return { data: [] }
+            }
+            
+            const contentType = response.headers.get('content-type') || ''
+            if (!contentType.includes('application/json')) {
+              const text = await response.text()
+              console.error(`Non-JSON response from ${url}: ${text.slice(0, 200)}`)
+              return { data: [] }
+            }
+            
+            return await response.json()
+          } catch (error) {
+            console.error(`Fetch error for ${url} (attempt ${attempt + 1}):`, error)
+            if (attempt === retries - 1) {
+              return { data: [] }
+            }
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+          }
+        }
+        return { data: [] }
+      }
 
-      const [areasData, regionsData, salesTypesData, usersData] = await Promise.all([
-        areasRes.json(),
-        regionsRes.json(),
-        salesTypesRes.json(),
-        usersRes.json(),
+      // Use parallel requests for faster loading
+      console.log("[v0] Starting parallel API requests...")
+      const [areasRes, regionsRes, salesTypesRes, usersRes] = await Promise.allSettled([
+        safeFetch("http://127.0.0.1:8000/api/areas"),
+        safeFetch("http://127.0.0.1:8000/api/regions"),
+        safeFetch("http://127.0.0.1:8000/api/sales-types"),
+        safeFetch("http://127.0.0.1:8000/api/users")
       ])
+      
+      // Extract results from Promise.allSettled
+      const areasData = areasRes.status === 'fulfilled' ? (areasRes.value?.data || areasRes.value || []) : []
+      const regionsData = regionsRes.status === 'fulfilled' ? (regionsRes.value?.data || regionsRes.value || []) : []
+      const salesTypesData = salesTypesRes.status === 'fulfilled' ? (salesTypesRes.value?.data || salesTypesRes.value || []) : []
+      const usersData = usersRes.status === 'fulfilled' ? (usersRes.value?.data || usersRes.value || []) : []
+
 
       console.debug(
         "[v0] loaded counts: users=",
@@ -141,21 +276,72 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
         ", salesTypes=",
         salesTypesData.length,
       )
+      
+      // Debug: Log the users data
+      console.log("[v0] Users data:", usersData)
+      console.log("[v0] Users with RegionalUser role:", usersData.filter(u => u.role === "RegionalUser"))
+      
+      // Debug: Log the actual areas data
+      console.log("[v0] Areas data:", areasData)
+      console.log("[v0] Areas data type:", typeof areasData, "isArray:", Array.isArray(areasData))
 
       setAreas(areasData)
       setRegions(regionsData)
       setSalesTypes(salesTypesData)
       setSalesOfficers(usersData)
+      
+      // Cache the data for 1 minute
+      const cacheData = {
+        areas: areasData,
+        regions: regionsData,
+        salesTypes: salesTypesData,
+        salesOfficers: usersData
+      }
+      const cacheKey = 'dashboard-dropdown-data'
+      const now = Date.now()
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+      localStorage.setItem(cacheKey + '-time', now.toString())
+      setIsLoading(false)
     } catch (error) {
       console.error("[v0] Error fetching dropdown data:", error)
+      
+      // Fallback to mock data if API fails
+      console.log("[v0] Using fallback mock data")
+      setAreas([
+        { areaId: 1, areaName: "Luzon" },
+        { areaId: 2, areaName: "Visayas" },
+        { areaId: 3, areaName: "Mindanao" }
+      ])
+      setRegions([])
+      setSalesTypes([])
+      setSalesOfficers([])
+      setIsLoading(false)
     }
   }
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
+  // Debounced filter update for real-time switching
+  const debouncedFilterUpdate = useCallback((newFilters: any) => {
+    // Clear existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+    
+    // Set new timeout for debounced update
+    debounceTimeoutRef.current = setTimeout(() => {
+      console.debug("[v0] 🚀 Debounced filter update triggered:", newFilters)
+      onFiltersChange(newFilters)
+    }, 300) // 300ms debounce delay
+  }, [onFiltersChange])
 
-  const handleReset = () => {
+  const handleFilterChange = useCallback((key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+    
+    // Trigger debounced filter update for real-time switching
+    debouncedFilterUpdate(newFilters)
+  }, [filters, debouncedFilterUpdate])
+
+  const handleReset = useCallback(() => {
     const resetFilters = {
       salesType: "all",
       area: "all",
@@ -165,23 +351,60 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
       endDate: ""
     }
     setFilters(resetFilters)
-  }
+    
+    // Clear any pending debounced updates and apply immediately
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+    onFiltersChange(resetFilters)
+  }, [onFiltersChange])
 
-  const handleApplyFilter = () => {
+  const handleClearDateRange = useCallback(() => {
+    const newFilters = {
+      ...filters,
+      startDate: "",
+      endDate: ""
+    }
+    setFilters(newFilters)
+    
+    // Clear any pending debounced updates and apply immediately
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+    onFiltersChange(newFilters)
+  }, [filters, onFiltersChange])
+
+  const handleResetToDefaultDateRange = useCallback(() => {
+    const defaultRange = getDefaultDateRange()
+    const newFilters = {
+      ...filters,
+      startDate: defaultRange.startDate,
+      endDate: defaultRange.endDate
+    }
+    setFilters(newFilters)
+    
+    // Clear any pending debounced updates and apply immediately
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+    onFiltersChange(newFilters)
+  }, [filters, onFiltersChange])
+
+  const handleApplyFilter = useCallback(() => {
     console.debug("[v0] applyFilters called with filters:", filters)
     onFiltersChange(filters)
-  }
+  }, [filters, onFiltersChange])
 
   // Validate date range
-  const isDateRangeValid = () => {
+  const isDateRangeValid = useMemo(() => {
     if (filters.startDate && filters.endDate) {
       return new Date(filters.startDate) <= new Date(filters.endDate)
     }
     return true
-  }
+  }, [filters.startDate, filters.endDate])
 
   return (
-    <div className="sticky top-1 sm:top-2 z-20 bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-2.5 sm:p-4 lg:p-6 mb-2 sm:mb-3 lg:mb-6">
+    <div className="sticky top-1 sm:top-2 z-20 bg-gradient-to-br from-white via-primary-50/20 to-secondary-50/10 rounded-lg sm:rounded-xl border border-white/50 shadow-sm p-2.5 sm:p-4 lg:p-6 mb-2 sm:mb-3 lg:mb-6 backdrop-blur-sm">
       {/* Mobile Compact View */}
       <div className="block sm:hidden space-y-2.5">
         {/* Row 1: Sales Type & Area */}
@@ -194,27 +417,43 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {salesTypes.map((type) => (
-                  <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
-                    {type.salesTypeName}
-                  </SelectItem>
-                ))}
+                {salesTypes.map((type, idx) => {
+                  const raw = type.salesTypeId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-salesType-${idx}` : String(raw)
+                  const label = type.salesTypeName ?? `Unknown (${idx})`
+                  const itemKey = type.salesTypeId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600 uppercase tracking-wide leading-tight">Area</label>
-            <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)}>
+            <Select value={filters.area} onValueChange={(value) => handleFilterChange("area", value)} disabled={isLoading}>
               <SelectTrigger className="h-8 text-xs border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder={isLoading ? "Loading..." : "All"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {areas.map((area) => (
-                  <SelectItem key={area.areaId} value={area.areaId.toString()}>
-                    {area.areaName}
-                  </SelectItem>
-                ))}
+                {isLoading ? (
+                  <SelectItem value="loading" disabled>Loading areas...</SelectItem>
+                ) : (
+                  areas.map((area, idx) => {
+                  const raw = area.areaId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-area-${idx}` : String(raw)
+                  const label = area.areaName ?? `Unknown (${idx})`
+                  const itemKey = area.areaId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -234,11 +473,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {filteredRegions.map((region) => (
-                  <SelectItem key={region.regionId} value={region.regionId.toString()}>
-                    {region.regionName}
-                  </SelectItem>
-                ))}
+                {filteredRegions.map((region, idx) => {
+                  const raw = region.regionId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-region-${idx}` : String(raw)
+                  const label = region.regionName ?? `Unknown (${idx})`
+                  const itemKey = region.regionId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -254,11 +499,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {filteredSalesOfficers.map((officer) => (
-                  <SelectItem key={officer.userId} value={officer.userId.toString()}>
-                    {officer.name}
-                  </SelectItem>
-                ))}
+                {filteredSalesOfficers.map((officer, idx) => {
+                  const raw = officer.userId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-officer-${idx}` : String(raw)
+                  const label = officer.name ?? `Unknown (${idx})`
+                  const itemKey = officer.userId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -273,7 +524,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange("startDate", e.target.value)}
-              className={`h-8 text-xs border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 ${!isDateRangeValid() ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+              className={`h-8 text-xs border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 ${!isDateRangeValid ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
             />
           </div>
           <div className="space-y-1">
@@ -283,7 +534,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange("endDate", e.target.value)}
-              className={`h-8 text-xs border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 ${!isDateRangeValid() ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+              className={`h-8 text-xs border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 ${!isDateRangeValid ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
             />
           </div>
         </div>
@@ -300,8 +551,18 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
             Reset
           </Button>
           <Button
+            onClick={handleClearDateRange}
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs border-gray-300 hover:bg-gray-50 w-full"
+            title="Clear date range filter"
+          >
+            <Calendar className="w-3 h-3 mr-1" />
+            Clear Dates
+          </Button>
+          <Button
             onClick={handleApplyFilter}
-            disabled={!isDateRangeValid()}
+            disabled={!isDateRangeValid}
             size="sm"
             className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full"
           >
@@ -322,11 +583,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {salesTypes.map((type) => (
-                  <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
-                    {type.salesTypeName}
-                  </SelectItem>
-                ))}
+                {salesTypes.map((type, idx) => {
+                  const raw = type.salesTypeId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-salesType-${idx}` : String(raw)
+                  const label = type.salesTypeName ?? `Unknown (${idx})`
+                  const itemKey = type.salesTypeId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -339,11 +606,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {areas.map((area) => (
-                  <SelectItem key={area.areaId} value={area.areaId.toString()}>
-                    {area.areaName}
-                  </SelectItem>
-                ))}
+                {areas.map((area, idx) => {
+                  const raw = area.areaId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-area-${idx}` : String(raw)
+                  const label = area.areaName ?? `Unknown (${idx})`
+                  const itemKey = area.areaId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -362,11 +635,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {filteredRegions.map((region) => (
-                  <SelectItem key={region.regionId} value={region.regionId.toString()}>
-                    {region.regionName}
-                  </SelectItem>
-                ))}
+                {filteredRegions.map((region, idx) => {
+                  const raw = region.regionId
+                  const value = raw == null || String(raw) === '' ? `__unknown__-region-${idx}` : String(raw)
+                  const label = region.regionName ?? `Unknown (${idx})`
+                  const itemKey = region.regionId ?? `${value}-${idx}`
+                  return (
+                    <SelectItem key={itemKey} value={value} aria-label={label}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -390,11 +669,17 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
                     No sales officers available
                   </SelectItem>
                 ) : (
-                  filteredSalesOfficers.map((officer) => (
-                    <SelectItem key={officer.userId} value={officer.userId.toString()}>
-                      {officer.name}
-                    </SelectItem>
-                  ))
+                  filteredSalesOfficers.map((officer, idx) => {
+                    const raw = officer.userId
+                    const value = raw == null || String(raw) === '' ? `__unknown__-officer-${idx}` : String(raw)
+                    const label = officer.name ?? `Unknown (${idx})`
+                    const itemKey = officer.userId ?? `${value}-${idx}`
+                    return (
+                      <SelectItem key={itemKey} value={value} aria-label={label}>
+                        {label}
+                      </SelectItem>
+                    )
+                  })
                 )}
               </SelectContent>
             </Select>
@@ -408,7 +693,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               value={filters.startDate}
               onChange={(e) => handleFilterChange("startDate", e.target.value)}
               className={`rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                !isDateRangeValid() ? 'border-red-500' : ''
+                !isDateRangeValid ? 'border-red-500' : ''
               }`}
             />
           </div>
@@ -421,7 +706,7 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               value={filters.endDate}
               onChange={(e) => handleFilterChange("endDate", e.target.value)}
               className={`rounded-md border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                !isDateRangeValid() ? 'border-red-500' : ''
+                !isDateRangeValid ? 'border-red-500' : ''
               }`}
             />
           </div>
@@ -436,9 +721,34 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
               Reset
             </Button>
             <Button
+              onClick={handleClearDateRange}
+              variant="outline"
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 border-gray-300 transition-colors text-sm flex-1 sm:flex-none"
+              title="Clear date range filter"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Clear Dates
+            </Button>
+            <Button
+              onClick={refreshDropdowns}
+              variant="outline"
+              className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 border-blue-300 transition-colors text-sm flex-1 sm:flex-none"
+              title="Refresh dropdown data"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            <Button
               onClick={handleApplyFilter}
-              disabled={!isDateRangeValid()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm flex-1 sm:flex-none"
+              disabled={!isDateRangeValid}
+              className="text-white px-4 py-2 rounded-lg shadow transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm flex-1 sm:flex-none"
+              style={{ backgroundColor: '#013f99' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#012d73';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#013f99';
+              }}
             >
               <Filter className="w-4 h-4 mr-2" />
               Apply Filter
@@ -447,8 +757,8 @@ export function DashboardFilters({ onFiltersChange }: FilterProps) {
         </div>
       </div>
       
-      {!isDateRangeValid() && (
-        <div className="text-red-500 text-sm mt-2">
+      {!isDateRangeValid && (
+        <div className="text-error-500 text-sm mt-2">
           Start date must be before or equal to end date
         </div>
       )}

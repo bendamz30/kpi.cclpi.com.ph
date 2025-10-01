@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRealTime } from "@/components/providers/real-time-provider"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,8 @@ interface AddSalesReportFormProps {
 }
 
 export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormProps) {
-  const { hasPermission } = useAuth()
+  const { hasPermission, user } = useAuth()
+  const { triggerRefresh } = useRealTime()
   const [formData, setFormData] = useState({
     salesRepId: "",
     reportDate: new Date().toISOString().split("T")[0], // Default to today's date
@@ -44,9 +46,10 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
   useEffect(() => {
     const fetchRegionalUsers = async () => {
       try {
-        const response = await fetch("/api/users")
+        const response = await fetch("http://127.0.0.1:8000/api/users")
         if (response.ok) {
-          const users = await response.json()
+          const usersResponse = await response.json()
+          const users = usersResponse?.data || usersResponse || []
           const regUsers = users.filter((user: User) => user.role === "RegionalUser")
           setRegionalUsers(regUsers)
         }
@@ -77,7 +80,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
     }
 
     try {
-      const response = await fetch("/api/sales-reports", {
+      const response = await fetch("http://127.0.0.1:8000/api/sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,6 +92,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
           salesCounselorActual: Number.parseInt(formData.salesCounselorActual),
           policySoldActual: Number.parseInt(formData.policySoldActual),
           agencyCoopActual: Number.parseInt(formData.agencyCoopActual),
+          createdBy: user?.userId || 113, // Use current user's ID, fallback to admin user
         }),
       })
 
@@ -107,6 +111,10 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
         policySoldActual: "",
         agencyCoopActual: "",
       })
+
+      // Trigger real-time refresh to update dashboard
+      console.log("[v0] Sales report created, triggering dashboard refresh")
+      triggerRefresh()
 
       // Call onSuccess after a brief delay to show the message
       setTimeout(() => {
@@ -183,7 +191,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
                 </SelectTrigger>
                 <SelectContent>
                   {regionalUsers.map((user: User) => (
-                    <SelectItem key={user.userId} value={user.userId.toString()}>
+                    <SelectItem key={user.userId || user.id} value={(user.userId || user.id || '').toString()}>
                       {user.name}
                     </SelectItem>
                   ))}

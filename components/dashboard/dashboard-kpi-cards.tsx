@@ -97,7 +97,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       budgetMonthly: safeData.premiumBudgetMonthly,
       budgetWeekly: safeData.premiumBudgetWeekly,
       format: formatCurrency,
-      color: "bg-blue-500",
+      color: "#013f99",
+      accentColor: "#4cb1e9",
+      bgColor: "#f8fafc",
+      borderColor: "#e2e8f0",
     },
     {
       title: "Sales Counselor",
@@ -106,7 +109,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       budgetMonthly: safeData.salesCounselorBudgetMonthly,
       budgetWeekly: safeData.salesCounselorBudgetWeekly,
       format: formatNumber,
-      color: "bg-emerald-500",
+      color: "#013f99",
+      accentColor: "#4cb1e9",
+      bgColor: "#f8fafc",
+      borderColor: "#e2e8f0",
     },
     {
       title: "Policy Sold",
@@ -115,7 +121,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       budgetMonthly: safeData.policySoldBudgetMonthly,
       budgetWeekly: safeData.policySoldBudgetWeekly,
       format: formatNumber,
-      color: "bg-amber-500",
+      color: "#013f99",
+      accentColor: "#4cb1e9",
+      bgColor: "#f8fafc",
+      borderColor: "#e2e8f0",
     },
     {
       title: "Agency Coop",
@@ -124,7 +133,10 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
       budgetMonthly: safeData.agencyCoopBudgetMonthly,
       budgetWeekly: safeData.agencyCoopBudgetWeekly,
       format: formatNumber,
-      color: "bg-purple-500",
+      color: "#013f99",
+      accentColor: "#4cb1e9",
+      bgColor: "#f8fafc",
+      borderColor: "#e2e8f0",
     },
   ]
 
@@ -137,54 +149,87 @@ export function DashboardKPICards({ data, loading }: KPICardsProps) {
         const isPositive = variance >= 0
 
         return (
-          <div key={item.title} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-3 sm:p-4 lg:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
-              <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-800 truncate leading-tight">{item.title}</h3>
-              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${item.color} flex-shrink-0 shadow-sm`}></div>
+          <div 
+            key={item.title} 
+            className="rounded-xl p-4 sm:p-5 lg:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-2"
+            style={{ 
+              backgroundColor: item.bgColor,
+              borderColor: item.borderColor
+            }}
+          >
+            {/* Header with title and status indicator */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 truncate leading-tight flex items-center">
+                <div className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: item.color }}></div>
+                {item.title}
+              </h3>
+              <div className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: item.accentColor }}></div>
             </div>
 
-            <div className="mb-2 sm:mb-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-base sm:text-lg lg:text-2xl xl:text-3xl font-bold text-gray-900 truncate leading-tight">{item.format(item.actual)}</span>
-                <span className="text-xs sm:text-sm lg:text-base text-gray-500 font-medium leading-tight">/ {item.format(item.target)}</span>
+            {/* Main value display */}
+            <div className="mb-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 truncate leading-tight">
+                  {item.format(item.actual)}
+                </span>
+                <span className="text-sm sm:text-base text-gray-600 font-medium leading-tight">
+                  / {item.format(item.target)}
+                </span>
               </div>
             </div>
 
-            <div className="mb-2 sm:mb-3 space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600 font-medium leading-tight">Monthly Target:</span>
-                <span className="font-semibold text-gray-900 text-xs truncate ml-1">{item.format(item.budgetMonthly)}</span>
+            {/* Target breakdown */}
+            <div className="mb-4 space-y-2 p-3 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 font-semibold">Monthly Target:</span>
+                <span className="font-bold text-gray-900 text-sm truncate ml-2">{item.format(item.budgetMonthly)}</span>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600 font-medium leading-tight">Weekly Target:</span>
-                <span className="font-semibold text-gray-900 text-xs truncate ml-1">{item.format(item.budgetWeekly)}</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 font-semibold">Weekly Target:</span>
+                <span className="font-bold text-gray-900 text-sm truncate ml-2">{item.format(item.budgetWeekly)}</span>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="text-xs font-semibold text-gray-700 leading-tight">Progress</div>
+            {/* Progress section */}
+            <div className="space-y-3">
+              <div className="text-sm font-bold text-gray-800 leading-tight">Progress</div>
 
-              <div className="w-full bg-gray-100 rounded-full h-2 shadow-inner">
+              {/* Progress bar */}
+              <div className="w-full rounded-full h-3 shadow-inner bg-white">
                 <div
-                  className={`h-2 rounded-full transition-all duration-500 ease-out ${item.color} shadow-sm`}
-                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                  className="h-3 rounded-full transition-all duration-700 ease-out shadow-sm"
+                  style={{ 
+                    width: `${Math.min(percentage, 100)}%`,
+                    background: `linear-gradient(90deg, ${item.color} 0%, ${item.accentColor} 100%)`
+                  }}
                 ></div>
               </div>
 
+              {/* Progress percentage and variance */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600 font-medium leading-tight">{formatNumber(percentage)}%</span>
-                <span className={`text-xs font-semibold leading-tight ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
+                <span className="text-sm font-bold leading-tight" style={{ color: item.color }}>
+                  {formatNumber(percentage)}%
+                </span>
+                <span className={`text-sm font-bold leading-tight ${isPositive ? "text-green-600" : "text-red-600"}`}>
                   {isPositive ? "+" : ""}
                   {formatNumber(variance)}%
                 </span>
               </div>
 
+              {/* Variance badge */}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-700 leading-tight">Variance</span>
+                <span className="text-sm font-bold text-gray-800 leading-tight">Variance</span>
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                    isPositive ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-red-100 text-red-800 border border-red-200"
+                  className={`px-3 py-1.5 rounded-full text-sm font-bold shadow-sm ${
+                    isPositive 
+                      ? "text-green-800" 
+                      : "text-red-800"
                   }`}
+                  style={{
+                    backgroundColor: isPositive 
+                      ? '#dcfce7' 
+                      : '#fecaca'
+                  }}
                 >
                   {isPositive ? "+" : ""}
                   {formatVarianceNumber(absoluteVariance)}

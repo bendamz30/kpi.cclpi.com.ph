@@ -1,0 +1,16 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="24" cy="24" r="22" fill="white" stroke="#333333" stroke-width="2"/>
+  
+  <!-- Yellow C with blue outline -->
+  <path d="M12 24C12 18 24 12 24 12C24 12 36 18 36 24C36 30 24 36 24 36C24 36 12 30 12 24Z" fill="#FFDD00" stroke="#013f99" stroke-width="2"/>
+  
+  <!-- White dove silhouette -->
+  <path d="M18 24C18 21 24 19 24 19C24 19 30 21 30 24C30 27 24 29 24 29C24 29 18 27 18 24Z" fill="white" stroke="#013f99" stroke-width="1.5"/>
+  
+  <!-- Dove details -->
+  <path d="M20 22C20 20 24 18 24 18C24 18 28 20 28 22C28 24 24 26 24 26C24 26 20 24 20 22Z" fill="white" stroke="#013f99" stroke-width="1"/>
+  
+  <!-- Text -->
+  <text x="24" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#013f99">CCLPI PLANS</text>
+</svg>

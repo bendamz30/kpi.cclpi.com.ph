@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Users, ChevronLeft, ChevronRight, Home, UserCheck, Shield, Menu, X } from "lucide-react"
+import { Users, ChevronLeft, ChevronRight, Home, UserCheck, Shield, Menu, X, Trash2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 
 interface SidebarProps {
@@ -29,10 +29,10 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen = false, onMobile
     },
     { 
       id: "sales-reps", 
-      label: "Sales Reps", 
+      label: "Sales Report", 
       icon: Users, 
       permission: "sales-reps:view",
-      roles: ["Admin", "SystemAdmin", "RegionalUser"] 
+      roles: ["Admin", "SystemAdmin"] 
     },
     { 
       id: "users", 
@@ -40,6 +40,13 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen = false, onMobile
       icon: UserCheck, 
       permission: "users:view",
       roles: ["Admin", "SystemAdmin"] 
+    },
+    { 
+      id: "trash-bin", 
+      label: "Trash Bin", 
+      icon: Trash2, 
+      permission: "trash-bin:view",
+      roles: ["SystemAdmin"] 
     },
   ]
 
@@ -92,8 +99,24 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen = false, onMobile
             return (
               <Button
                 key={item.id}
-                variant={activeTab === item.id ? "secondary" : "ghost"}
+                variant="ghost"
                 className={cn("w-full justify-start", collapsed && "px-2")}
+                style={{
+                  backgroundColor: activeTab === item.id ? "#023f99" : "transparent",
+                  color: activeTab === item.id ? "white" : "inherit",
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== item.id) {
+                    e.currentTarget.style.backgroundColor = "#f3cf47";
+                    e.currentTarget.style.color = "#013f99";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== item.id) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = "inherit";
+                  }
+                }}
                 onClick={() => onTabChange(item.id)}
               >
                 <Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
@@ -131,8 +154,24 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen = false, onMobile
             return (
               <Button
                 key={item.id}
-                variant={activeTab === item.id ? "secondary" : "ghost"}
+                variant="ghost"
                 className="w-full justify-start"
+                style={{
+                  backgroundColor: activeTab === item.id ? "#023f99" : "transparent",
+                  color: activeTab === item.id ? "white" : "inherit",
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== item.id) {
+                    e.currentTarget.style.backgroundColor = "#f3cf47";
+                    e.currentTarget.style.color = "#013f99";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== item.id) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = "inherit";
+                  }
+                }}
                 onClick={() => handleTabChange(item.id)}
               >
                 <Icon className="h-4 w-4 mr-2" />

@@ -1,13 +1,11 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { useToast } from "@/hooks/use-toast"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRealTime } from "@/components/providers/real-time-provider"
 
 interface Area {
@@ -26,21 +24,23 @@ interface SalesType {
   salesTypeName: string
 }
 
-interface AddUserModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUserAdded: () => void
+interface AddUserFormProps {
+  onSuccess: () => void
+  onCancel: () => void
 }
 
-export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalProps) {
+export function AddUserForm({ onSuccess, onCancel }: AddUserFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "", // Changed from passwordHash to password for clarity
+    username: "",
+    contact_number: "",
+    address: "",
+    profile_picture: null as File | null,
     role: "",
     areaId: "",
     regionId: "",
-    salesTypeId: "", // Changed from salesType to salesTypeId
+    salesTypeId: "",
     annualTarget: "",
     salesCounselorTarget: "",
     policySoldTarget: "",
@@ -51,15 +51,14 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [filteredRegions, setFilteredRegions] = useState<Region[]>([])
   const [salesTypes, setSalesTypes] = useState<SalesType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const nameInputRef = useRef<HTMLInputElement>(null)
   const { triggerRefresh } = useRealTime()
 
   useEffect(() => {
-    if (open) {
-      fetchDropdownData()
-    }
-  }, [open])
+    fetchDropdownData()
+  }, [])
 
   useEffect(() => {
     if (formData.areaId) {
@@ -79,193 +78,205 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
   const fetchDropdownData = async () => {
     try {
-      const areasResponse = await fetch("/api/areas")
+      const areasResponse = await fetch("http://127.0.0.1:8000/api/areas")
       if (areasResponse.ok) {
-        const areasData = await areasResponse.json()
-        setAreas(areasData)
+        const areasResponseData = await areasResponse.json()
+        setAreas(areasResponseData.data || [])
       }
 
-      const regionsResponse = await fetch("/api/regions")
+      const regionsResponse = await fetch("http://127.0.0.1:8000/api/regions")
       if (regionsResponse.ok) {
-        const regionsData = await regionsResponse.json()
-        setRegions(regionsData)
+        const regionsResponseData = await regionsResponse.json()
+        setRegions(regionsResponseData.data || [])
       }
 
-      const salesTypesResponse = await fetch("/api/sales-types")
+      const salesTypesResponse = await fetch("http://127.0.0.1:8000/api/sales-types")
       if (salesTypesResponse.ok) {
-        const salesTypesData = await salesTypesResponse.json()
-        setSalesTypes(salesTypesData)
+        const salesTypesResponseData = await salesTypesResponse.json()
+        setSalesTypes(salesTypesResponseData.data || [])
       }
     } catch (error) {
-      console.error("Failed to fetch dropdown data:", error)
+      console.error("Error fetching dropdown data:", error)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError("")
+    setSuccessMessage("")
 
     try {
-      const payload = {
-        name: formData.name,
-        email: formData.email,
-        passwordHash: formData.password || "PLEASE_REPLACE_WITH_HASH", // Map password to passwordHash for API
-        role: formData.role === "admin" ? "SystemAdmin" : formData.role === "regionalUser" ? "RegionalUser" : "Viewer", // Map role values
-        areaId: formData.areaId ? Number.parseInt(formData.areaId) : null,
-        regionId: formData.regionId ? Number.parseInt(formData.regionId) : null,
-        salesTypeId: formData.salesTypeId ? Number.parseInt(formData.salesTypeId) : null, // Changed from salesType to salesTypeId
-        annualTarget: formData.annualTarget ? Number.parseFloat(formData.annualTarget) : undefined,
-        ...(formData.role === "regionalUser" && {
-          // Check for regionalUser instead of RegionalUser
-          salesCounselorTarget: formData.salesCounselorTarget
-            ? Number.parseInt(formData.salesCounselorTarget)
-            : undefined,
-          policySoldTarget: formData.policySoldTarget ? Number.parseInt(formData.policySoldTarget) : undefined,
-          agencyCoopTarget: formData.agencyCoopTarget ? Number.parseInt(formData.agencyCoopTarget) : undefined,
-        }),
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('username', formData.username)
+      formDataToSend.append('contact_number', formData.contact_number)
+      formDataToSend.append('address', formData.address)
+      if (formData.profile_picture) {
+        formDataToSend.append('profile_picture', formData.profile_picture)
       }
+      formDataToSend.append('role', formData.role)
+      // Only append numeric fields if they have values
+      if (formData.areaId) formDataToSend.append('areaId', formData.areaId)
+      if (formData.regionId) formDataToSend.append('regionId', formData.regionId)
+      if (formData.salesTypeId) formDataToSend.append('salesTypeId', formData.salesTypeId)
+      if (formData.annualTarget) formDataToSend.append('annualTarget', formData.annualTarget)
+      if (formData.salesCounselorTarget) formDataToSend.append('salesCounselorTarget', formData.salesCounselorTarget)
+      if (formData.policySoldTarget) formDataToSend.append('policySoldTarget', formData.policySoldTarget)
+      if (formData.agencyCoopTarget) formDataToSend.append('agencyCoopTarget', formData.agencyCoopTarget)
 
-      const response = await fetch("/api/users", {
+      const response = await fetch("http://127.0.0.1:8000/api/users", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: formDataToSend,
       })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to add user")
-      }
-
-      toast({
-        title: "Success",
-        description: `User ${result.user.name} has been added successfully.`,
-      })
-
-      if (formData.role === "regionalUser" && formData.annualTarget) {
-        console.log("[v0] User with targets added, triggering dashboard refresh")
+      if (response.ok) {
+        setSuccessMessage("User created successfully!")
         triggerRefresh()
+        setTimeout(() => {
+          onSuccess()
+        }, 1500)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || "Failed to create user")
       }
-
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: "",
-        areaId: "",
-        regionId: "",
-        salesTypeId: "", // Changed from salesType to salesTypeId
-        annualTarget: "",
-        salesCounselorTarget: "",
-        policySoldTarget: "",
-        agencyCoopTarget: "",
-      })
-
-      onUserAdded()
-      onOpenChange(false)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add user",
-        variant: "destructive",
-      })
+      setError(error instanceof Error ? error.message : "Failed to add user")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleCancel = () => {
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "",
-      areaId: "",
-      regionId: "",
-      salesTypeId: "", // Changed from salesType to salesTypeId
-      annualTarget: "",
-      salesCounselorTarget: "",
-      policySoldTarget: "",
-      agencyCoopTarget: "",
-    })
-    onOpenChange(false)
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (error) setError("")
+    if (successMessage) setSuccessMessage("")
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setFormData((prev) => ({ ...prev, profile_picture: file }))
+    if (error) setError("")
+    if (successMessage) setSuccessMessage("")
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
-          <DialogDescription>
-            Create a new user account with role-based access and regional assignments.
-          </DialogDescription>
-        </DialogHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Add User</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
+          {successMessage && (
+            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">{successMessage}</div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">User Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  ref={nameInputRef}
-                  id="name"
-                  aria-label="User full name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  aria-label="User email address"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                ref={nameInputRef}
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                placeholder="Enter full name"
+                required
+              />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  aria-label="User password"
-                  placeholder="Leave empty for default"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger aria-label="Select user role">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="regionalUser">Regional User</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="Enter email address"
+                required
+              />
             </div>
           </div>
 
-          <div className={`space-y-4 ${formData.role !== "regionalUser" ? "hidden" : ""}`}>
-            <h3 className="text-lg font-medium">Assignment</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={(e) => handleInputChange("username", e.target.value)}
+                placeholder="Enter username"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact_number">Contact Number</Label>
+              <Input
+                id="contact_number"
+                type="tel"
+                value={formData.contact_number}
+                onChange={(e) => handleInputChange("contact_number", e.target.value)}
+                placeholder="Enter contact number"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              placeholder="Enter address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="profile_picture">Profile Picture</Label>
+            <Input
+              id="profile_picture"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {formData.profile_picture && (
+              <div className="mt-2">
+                <p className="text-sm text-gray-600">Selected: {formData.profile_picture.name}</p>
+                <div className="mt-2">
+                  <img
+                    src={URL.createObjectURL(formData.profile_picture)}
+                    alt="Preview"
+                    className="w-20 h-20 object-cover rounded-full border"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">Role *</Label>
+            <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SystemAdmin">System Admin</SelectItem>
+                <SelectItem value="RegionalUser">Regional User</SelectItem>
+                <SelectItem value="Viewer">Viewer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.role === "RegionalUser" && (
+            <>
               <div className="space-y-2">
-                <Label htmlFor="areaId">Area</Label>
-                <Select value={formData.areaId} onValueChange={(value) => setFormData({ ...formData, areaId: value })}>
-                  <SelectTrigger aria-label="Select area">
-                    <SelectValue placeholder="Select area" />
+                <Label htmlFor="area">Area</Label>
+                <Select value={formData.areaId} onValueChange={(value) => handleInputChange("areaId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an area" />
                   </SelectTrigger>
                   <SelectContent>
                     {areas.map((area) => (
@@ -276,15 +287,12 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="regionId">Region</Label>
-                <Select
-                  value={formData.regionId}
-                  onValueChange={(value) => setFormData({ ...formData, regionId: value })}
-                  disabled={!formData.areaId}
-                >
-                  <SelectTrigger aria-label="Select region">
-                    <SelectValue placeholder={!formData.areaId ? "Select area first" : "Select region"} />
+                <Label htmlFor="region">Region</Label>
+                <Select value={formData.regionId} onValueChange={(value) => handleInputChange("regionId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a region" />
                   </SelectTrigger>
                   <SelectContent>
                     {filteredRegions.map((region) => (
@@ -295,95 +303,81 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="salesTypeId">Sales Type</Label>
-                <Select
-                  value={formData.salesTypeId}
-                  onValueChange={(value) => setFormData({ ...formData, salesTypeId: value })}
-                >
-                  <SelectTrigger aria-label="Select sales type">
-                    <SelectValue placeholder="Select sales type" />
+                <Label htmlFor="salesType">Sales Type</Label>
+                <Select value={formData.salesTypeId} onValueChange={(value) => handleInputChange("salesTypeId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a sales type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {salesTypes.map((type) => (
-                      <SelectItem key={type.salesTypeId} value={type.salesTypeId.toString()}>
-                        {type.salesTypeName}
+                    {salesTypes.map((salesType) => (
+                      <SelectItem key={salesType.salesTypeId} value={salesType.salesTypeId.toString()}>
+                        {salesType.salesTypeName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
 
-          <div className={`space-y-4 ${formData.role !== "regionalUser" ? "hidden" : ""}`}>
-            <h3 className="text-lg font-medium">Sales Targets</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="annualTarget">Annual Premium Target *</Label>
-                <Input
-                  id="annualTarget"
-                  type="number"
-                  aria-label="Annual premium target amount"
-                  placeholder="0"
-                  value={formData.annualTarget}
-                  onChange={(e) => setFormData({ ...formData, annualTarget: e.target.value })}
-                  required={formData.role === "regionalUser"}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="salesCounselorTarget">Sales Counselor Target *</Label>
+                  <Label htmlFor="annualTarget">Annual Target</Label>
+                  <Input
+                    id="annualTarget"
+                    type="number"
+                    value={formData.annualTarget}
+                    onChange={(e) => handleInputChange("annualTarget", e.target.value)}
+                    placeholder="Enter annual target"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="salesCounselorTarget">Sales Counselor Target</Label>
                   <Input
                     id="salesCounselorTarget"
                     type="number"
-                    aria-label="Sales counselor target count"
-                    placeholder="0"
                     value={formData.salesCounselorTarget}
-                    onChange={(e) => setFormData({ ...formData, salesCounselorTarget: e.target.value })}
-                    required={formData.role === "regionalUser"}
+                    onChange={(e) => handleInputChange("salesCounselorTarget", e.target.value)}
+                    placeholder="Enter sales counselor target"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="policySoldTarget">Policy Sold Target *</Label>
+                  <Label htmlFor="policySoldTarget">Policy Sold Target</Label>
                   <Input
                     id="policySoldTarget"
                     type="number"
-                    aria-label="Policy sold target count"
-                    placeholder="0"
                     value={formData.policySoldTarget}
-                    onChange={(e) => setFormData({ ...formData, policySoldTarget: e.target.value })}
-                    required={formData.role === "regionalUser"}
+                    onChange={(e) => handleInputChange("policySoldTarget", e.target.value)}
+                    placeholder="Enter policy sold target"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="agencyCoopTarget">Agency Coop Target *</Label>
+                  <Label htmlFor="agencyCoopTarget">Agency Coop Target</Label>
                   <Input
                     id="agencyCoopTarget"
                     type="number"
-                    aria-label="Agency cooperation target count"
-                    placeholder="0"
                     value={formData.agencyCoopTarget}
-                    onChange={(e) => setFormData({ ...formData, agencyCoopTarget: e.target.value })}
-                    required={formData.role === "regionalUser"}
+                    onChange={(e) => handleInputChange("agencyCoopTarget", e.target.value)}
+                    placeholder="Enter agency coop target"
                   />
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
-          <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting || !formData.name || !formData.email || !formData.username || !formData.role}>
+              {isSubmitting ? "Saving..." : "Create User"}
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   )
 }
-
-export { AddUserModal as AddUserForm }

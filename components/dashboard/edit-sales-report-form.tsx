@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRealTime } from "@/components/providers/real-time-provider"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +33,13 @@ interface EditSalesReportFormProps {
 }
 
 export function EditSalesReportForm({ report, onSuccess, onCancel }: EditSalesReportFormProps) {
+  const { triggerRefresh } = useRealTime()
   const [formData, setFormData] = useState({
     reportDate: report.reportDate.split("T")[0], // Convert to YYYY-MM-DD format
-    premiumActual: report.premiumActual.toString(),
-    salesCounselorActual: report.salesCounselorActual.toString(),
-    policySoldActual: report.policySoldActual.toString(),
-    agencyCoopActual: report.agencyCoopActual.toString(),
+    premiumActual: (report.premiumActual || 0).toString(),
+    salesCounselorActual: (report.salesCounselorActual || 0).toString(),
+    policySoldActual: (report.policySoldActual || 0).toString(),
+    agencyCoopActual: (report.agencyCoopActual || 0).toString(),
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -80,7 +82,7 @@ export function EditSalesReportForm({ report, onSuccess, onCancel }: EditSalesRe
     setError("")
 
     try {
-      const response = await fetch(`/api/sales-reports/${report.reportId}`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/sales/${report.reportId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -91,6 +93,9 @@ export function EditSalesReportForm({ report, onSuccess, onCancel }: EditSalesRe
       const result = await response.json()
 
       if (response.ok) {
+        // Trigger real-time refresh to update dashboard
+        console.log("[v0] Sales report updated, triggering dashboard refresh")
+        triggerRefresh()
         onSuccess()
       } else {
         setError(result.error || "Failed to update report")

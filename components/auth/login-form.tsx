@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,36 +13,60 @@ import Image from "next/image"
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const { login, isLoading } = useAuth()
+  const [fieldErrors, setFieldErrors] = useState<{email?: string, password?: string}>({})
+  const { login, isLoading, loginError } = useAuth()
+
+
+  const validateForm = () => {
+    const errors: {email?: string, password?: string} = {}
+    
+    if (!email.trim()) {
+      errors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Please enter a valid email address"
+    }
+    
+    if (!password.trim()) {
+      errors.password = "Password is required"
+    }
+    
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    setFieldErrors({})
+
+    if (!validateForm()) {
+      return
+    }
 
     const result = await login(email, password)
     
     if (!result.success) {
-      setError(result.error || "Login failed")
+      // Error will be handled by context and displayed automatically
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-9 h-9 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%)' }}>
+      <Card className="w-full max-w-md shadow-2xl border-2" style={{ borderColor: '#4cb1e9' }}>
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 flex items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
             <Image
               src="/cclpi-plans-logo.png"
-              alt="CCLPI Plans Logo"
-              width={36}
-              height={36}
+              alt="CCLPI PLANS Logo"
+              width={56}
+              height={56}
               className="object-contain"
             />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">CCLPI Plans Dashboard</CardTitle>
-          <CardDescription className="text-gray-600">Sign in to access your dashboard</CardDescription>
+          <div>
+            <CardTitle className="text-2xl font-bold" style={{ color: '#013f99' }}>CCLPI PLANS</CardTitle>
+            <CardDescription className="mt-1" style={{ color: '#4cb1e9' }}>Sales Dashboard</CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -52,11 +76,22 @@ export function LoginForm() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (fieldErrors.email) {
+                    setFieldErrors(prev => ({ ...prev, email: undefined }))
+                  }
+                }}
                 placeholder="Enter your email"
-                className="h-11"
+                className={`h-11 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : ''}`}
                 required
               />
+              {fieldErrors.email && (
+                <p className="text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
@@ -65,9 +100,14 @@ export function LoginForm() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (fieldErrors.password) {
+                      setFieldErrors(prev => ({ ...prev, password: undefined }))
+                    }
+                  }}
                   placeholder="Enter your password"
-                  className="h-11 pr-10"
+                  className={`h-11 pr-10 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : ''}`}
                   required
                 />
                 <button
@@ -78,18 +118,35 @@ export function LoginForm() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
             
-            {error && (
-              <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-600">{error}</span>
+            {loginError && (
+              <div className="flex items-start space-x-2 p-4 bg-red-50 border border-red-200 rounded-md">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">Login Failed</p>
+                  <p className="text-sm text-red-600 mt-1">{loginError}</p>
+                </div>
               </div>
             )}
             
+            
             <Button 
               type="submit" 
-              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" 
+              className="w-full h-11 text-white font-medium" 
+              style={{ backgroundColor: '#013f99' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#012d73';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#013f99';
+              }}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -102,34 +159,6 @@ export function LoginForm() {
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Demo Credentials:</h4>
-            <div className="space-y-1 text-xs text-gray-600">
-              <div className="flex justify-between">
-                <span>System Admin:</span>
-                <span className="font-mono">christine@cclpi.com.ph</span>
-              </div>
-              <div className="flex justify-between">
-                <span>System Admin:</span>
-                <span className="font-mono">alvin@gmail.com</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Viewer:</span>
-                <span className="font-mono">viewer@example.com</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Regional User:</span>
-                <span className="font-mono">jazcyl@example.com</span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <span className="text-gray-500">Passwords: </span>
-                <span className="font-mono font-medium">cclpi</span>
-                <span className="text-gray-400 mx-1">or</span>
-                <span className="font-mono font-medium">password</span>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

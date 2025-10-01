@@ -7,6 +7,9 @@ export type UserRole = 'Admin' | 'SystemAdmin' | 'Viewer' | 'RegionalUser'
 
 export interface AuthUser extends User {
   role: UserRole
+  areaId?: number | null
+  regionId?: number | null
+  salesTypeId?: number | null
 }
 
 export interface AuthState {
@@ -14,265 +17,246 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   token: string | null
+  loginError: string
 }
 
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
   hasPermission: (permission: string) => boolean
-  hasRole: (role: UserRole | UserRole[]) => boolean
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Role-based permissions
-const ROLE_PERMISSIONS = {
-  Admin: [
-    'dashboard:view',
-    'dashboard:edit',
-    'users:view',
-    'users:create',
-    'users:edit',
-    'users:delete',
-    'sales-reps:view',
-    'sales-reps:create',
-    'sales-reps:edit',
-    'sales-reps:delete',
-    'reports:view',
-    'reports:create',
-    'reports:edit',
-    'reports:delete',
-    'settings:view',
-    'settings:edit'
-  ],
-  SystemAdmin: [
-    'dashboard:view',
-    'dashboard:edit',
-    'users:view',
-    'users:create',
-    'users:edit',
-    'users:delete',
-    'sales-reps:view',
-    'sales-reps:create',
-    'sales-reps:edit',
-    'sales-reps:delete',
-    'reports:view',
-    'reports:create',
-    'reports:edit',
-    'reports:delete',
-    'settings:view',
-    'settings:edit'
-  ],
-  Viewer: [
-    'dashboard:view'
-  ],
-  RegionalUser: [
-    'dashboard:view'
-  ]
-}
-
-// Generate a simple JWT-like token (for demo purposes)
-const generateToken = (user: AuthUser): string => {
-  const payload = {
-    userId: user.userId,
-    email: user.email,
-    role: user.role,
-    iat: Date.now(),
-    exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
   }
-  
-  // Simple base64 encoding (in production, use proper JWT)
-  return btoa(JSON.stringify(payload))
-}
-
-// Decode token
-const decodeToken = (token: string): any => {
-  try {
-    return JSON.parse(atob(token))
-  } catch {
-    return null
-  }
-}
-
-// Check if token is valid
-const isTokenValid = (token: string): boolean => {
-  const decoded = decodeToken(token)
-  if (!decoded) return false
-  
-  return decoded.exp > Date.now()
-}
-
-// Secure storage helpers
-const setSecureStorage = (key: string, value: string) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(key, value)
-  }
-}
-
-const getSecureStorage = (key: string): string | null => {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(key)
-}
-
-const removeSecureStorage = (key: string) => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(key)
-  }
+  return context
 }
 
 interface AuthProviderProps {
   children: ReactNode
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-    isLoading: true,
-    token: null
-  })
+// Mock users for authentication
+const mockUsers: AuthUser[] = [
+  {
+    userId: 1,
+    name: 'Admin User',
+    email: 'admin@cclpi.com',
+    passwordHash: 'hashed_password',
+    role: 'SystemAdmin',
+    areaId: null,
+    regionId: null,
+    salesTypeId: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: null,
+  },
+  {
+    userId: 2,
+    name: 'Regional Manager',
+    email: 'regional@cclpi.com',
+    passwordHash: 'hashed_password',
+    role: 'RegionalUser',
+    areaId: 1,
+    regionId: 1,
+    salesTypeId: 1,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: null,
+  },
+  {
+    userId: 3,
+    name: 'Viewer User',
+    email: 'viewer@cclpi.com',
+    passwordHash: 'hashed_password',
+    role: 'Viewer',
+    areaId: null,
+    regionId: null,
+    salesTypeId: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: null,
+  },
+  {
+    userId: 4,
+    name: 'Diana User',
+    email: 'diana@cclpi.com.ph',
+    passwordHash: 'hashed_password',
+    role: 'RegionalUser',
+    areaId: 1,
+    regionId: 1,
+    salesTypeId: 1,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: null,
+  }
+]
 
-  // Initialize auth state from storage
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(null)
+  const [loginError, setLoginError] = useState<string>("")
+
   useEffect(() => {
-    const initializeAuth = () => {
-      const storedToken = getSecureStorage('auth_token')
-      const storedUser = getSecureStorage('auth_user')
-      
-      if (storedToken && storedUser && isTokenValid(storedToken)) {
-        try {
-          const user = JSON.parse(storedUser)
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            token: storedToken
-          })
-        } catch {
-          // Invalid stored data, clear it
-          removeSecureStorage('auth_token')
-          removeSecureStorage('auth_user')
-          setAuthState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            token: null
-          })
+    // Check for existing authentication on mount
+    const checkAuth = () => {
+      try {
+        const storedToken = localStorage.getItem('auth_token')
+        const storedUser = localStorage.getItem('auth_user')
+        console.log('Auth check on mount:', { storedToken, storedUser })
+        
+        if (storedToken && storedUser) {
+          const userData = JSON.parse(storedUser)
+          console.log('Restoring auth state:', userData)
+          setUser(userData)
+          setToken(storedToken)
+          setIsAuthenticated(true)
+        } else {
+          console.log('No stored auth data found')
         }
-      } else {
-        // Clear invalid tokens
-        removeSecureStorage('auth_token')
-        removeSecureStorage('auth_user')
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          token: null
-        })
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        // Clear storage on error
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    initializeAuth()
+    checkAuth()
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      setIsLoading(true)
+      setLoginError("") // Clear any previous error
+      console.log('Login attempt:', { email, password })
       
-      // Fetch users from API
-      const response = await fetch('/api/users')
-      if (!response.ok) {
-        throw new Error('Failed to fetch users')
-      }
-      
-      const users = await response.json()
-      const user = users.find((u: any) => u.email === email)
-      
-      if (!user) {
-        return { success: false, error: 'Invalid email or password' }
-      }
-      
-      // For demo purposes, accept "password" and "cclpi" as valid passwords
-      // In production, you would hash and compare passwords
-      if (password !== 'password' && password !== 'cclpi') {
-        return { success: false, error: 'Invalid email or password' }
-      }
-      
-      const authUser: AuthUser = {
-        ...user,
-        role: user.role as UserRole
-      }
-      
-      const token = generateToken(authUser)
-      
-      // Store in secure storage
-      setSecureStorage('auth_token', token)
-      setSecureStorage('auth_user', JSON.stringify(authUser))
-      
-      setAuthState({
-        user: authUser,
-        isAuthenticated: true,
-        isLoading: false,
-        token
+      // Call the real Laravel API
+      const response = await fetch('http://127.0.0.1:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
       })
+
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        const errorMessage = data.message || 'Login failed'
+        setLoginError(errorMessage)
+        return { 
+          success: false, 
+          error: errorMessage
+        }
+      }
+
+      const { user: userData, token } = data.data
+      
+      // Debug: Log the user data to see if profile_picture is included
+      console.log('Login API response user data:', userData)
+      console.log('Profile picture URL:', userData.profile_picture_url)
+      
+      // Store authentication data
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('auth_user', JSON.stringify(userData))
+      
+      setUser(userData)
+      setToken(token)
+      setIsAuthenticated(true)
+      setLoginError("") // Clear error on successful login
       
       return { success: true }
     } catch (error) {
       console.error('Login error:', error)
-      return { success: false, error: 'Login failed. Please try again.' }
+      const errorMessage = 'Login failed. Please try again.'
+      setLoginError(errorMessage)
+      return { 
+        success: false, 
+        error: errorMessage
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const logout = () => {
-    // Clear storage
-    removeSecureStorage('auth_token')
-    removeSecureStorage('auth_user')
+    // Clear authentication data
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
     
-    // Reset state
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      token: null
-    })
+    setUser(null)
+    setToken(null)
+    setIsAuthenticated(false)
   }
 
   const hasPermission = (permission: string): boolean => {
-    if (!authState.user) return false
+    if (!user) return false
     
-    const userPermissions = ROLE_PERMISSIONS[authState.user.role] || []
-    return userPermissions.includes(permission)
-  }
-
-  const hasRole = (role: UserRole | UserRole[]): boolean => {
-    if (!authState.user) return false
-    
-    if (Array.isArray(role)) {
-      return role.includes(authState.user.role)
+    // Simple permission logic based on user role
+    switch (user.role) {
+      case 'SystemAdmin':
+        return true // SystemAdmin has all permissions
+      case 'Admin':
+        return permission === 'dashboard:view' || permission === 'sales-reps:view' || permission === 'users:view'
+      case 'RegionalUser':
+        return permission === 'dashboard:view' // RegionalUser can only view dashboard
+      case 'Viewer':
+        return permission === 'dashboard:view' || permission === 'sales-reps:view'
+      default:
+        return false
     }
-    
-    return authState.user.role === role
   }
 
-  const contextValue: AuthContextType = {
-    ...authState,
+  const refreshUser = async (): Promise<void> => {
+    if (!user || !token) return
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          const updatedUser = data.data
+          console.log('Refreshed user data:', updatedUser)
+          console.log('New profile picture URL:', updatedUser.profile_picture_url)
+          
+          // Update localStorage and state
+          localStorage.setItem('auth_user', JSON.stringify(updatedUser))
+          setUser(updatedUser)
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error)
+    }
+  }
+
+  const value: AuthContextType = {
+    user,
+    isAuthenticated,
+    isLoading,
+    token,
+    loginError,
     login,
     logout,
     hasPermission,
-    hasRole
+    refreshUser,
   }
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

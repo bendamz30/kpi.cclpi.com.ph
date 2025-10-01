@@ -132,7 +132,7 @@ export const exportToPDF = (data: ExportSummary, selectedMetric: string = 'premi
       cellPadding: 3,
     },
     headStyles: {
-      fillColor: [59, 130, 246], // blue-500
+      fillColor: [1, 63, 153], // Primary brand color #013f99
       textColor: 255,
       fontStyle: 'bold',
     },
