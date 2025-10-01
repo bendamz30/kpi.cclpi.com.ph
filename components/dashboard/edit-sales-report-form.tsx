@@ -82,7 +82,7 @@ export function EditSalesReportForm({ report, onSuccess, onCancel }: EditSalesRe
     setError("")
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/sales/${report.reportId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/${report.reportId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

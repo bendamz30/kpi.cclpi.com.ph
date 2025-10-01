@@ -64,7 +64,7 @@ export function UsersTable() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/users")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`)
       if (response.ok) {
         const userResponse = await response.json()
         const userData = userResponse?.data || userResponse || []
@@ -79,7 +79,7 @@ export function UsersTable() {
 
   const fetchRegions = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/regions")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/regions`)
       if (response.ok) {
         const regionsResponse = await response.json()
         const regionsData = regionsResponse?.data || regionsResponse || []
@@ -127,7 +127,7 @@ export function UsersTable() {
 
     setDeleteLoading(true)
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/users/${deletingUser.userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${deletingUser.userId}`, {
         method: "DELETE",
       })
 
@@ -167,7 +167,7 @@ export function UsersTable() {
 
     setResetLoading(true)
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/users/${resettingUser.userId}/reset-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${resettingUser.userId}/reset-password`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',

@@ -86,7 +86,7 @@ export function SalesRepsTable() {
         }
       }
       
-      const response = await fetch("http://127.0.0.1:8000/api/sales")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales`)
       if (response.ok) {
         const responseData = await response.json()
         const data = responseData?.data || responseData || []
@@ -197,7 +197,7 @@ export function SalesRepsTable() {
 
     setDeleteLoading(true)
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/sales/${deletingReport.reportId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/${deletingReport.reportId}`, {
         method: "DELETE",
       })
 

@@ -259,7 +259,7 @@ function DashboardContent() {
         params.append('salesRepId', activeFilters.salesRepId)
       }
       
-      const response = await fetch(`http://127.0.0.1:8000/api/kpi-targets?${params.toString()}`)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/kpi-targets?${params.toString()}`)
       const data = await response.json()
       
       if (data.success && data.data) {

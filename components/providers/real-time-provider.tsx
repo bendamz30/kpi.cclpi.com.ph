@@ -58,7 +58,7 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
         
         try {
           // Only poll sales endpoint to reduce load
-          const endpoint = "http://127.0.0.1:8000/api/sales"
+          const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/sales`
           
           const response = await fetch(endpoint, {
             headers: { 'Accept': 'application/json' }
@@ -181,7 +181,7 @@ export function RealTimeProvider({ children }: RealTimeProviderProps) {
         if (!isPollingActive || !isPageVisible) return
         
         try {
-          const endpoint = "http://127.0.0.1:8000/api/sales"
+          const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/sales`
           
           const response = await fetch(endpoint, {
             headers: { 'Accept': 'application/json' }

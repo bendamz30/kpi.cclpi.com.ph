@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('Login attempt:', { email, password })
       
       // Call the real Laravel API
-      const response = await fetch('http://127.0.0.1:8000/api/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!user || !token) return
     
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

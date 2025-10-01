@@ -253,10 +253,10 @@ export function DashboardFilters({ onFiltersChange, onRefreshDropdowns }: Filter
       // Use parallel requests for faster loading
       console.log("[v0] Starting parallel API requests...")
       const [areasRes, regionsRes, salesTypesRes, usersRes] = await Promise.allSettled([
-        safeFetch("http://127.0.0.1:8000/api/areas"),
-        safeFetch("http://127.0.0.1:8000/api/regions"),
-        safeFetch("http://127.0.0.1:8000/api/sales-types"),
-        safeFetch("http://127.0.0.1:8000/api/users")
+        safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/areas`),
+        safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/regions`),
+        safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/sales-types`),
+        safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/users`)
       ])
       
       // Extract results from Promise.allSettled

@@ -75,7 +75,7 @@ export function ChangePasswordModal({ children }: ChangePasswordModalProps) {
     setErrors({})
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}/change-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

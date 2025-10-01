@@ -169,19 +169,19 @@ function SalesPerformanceChart({
       }
 
       // Use sequential requests with proper error handling
-      const reportsRes = await safeFetch("http://127.0.0.1:8000/api/sales")
+      const reportsRes = await safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/sales`)
       await new Promise(r => setTimeout(r, 200)) // small delay between requests
       
-      const usersRes = await safeFetch("http://127.0.0.1:8000/api/users")
+      const usersRes = await safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/users`)
       await new Promise(r => setTimeout(r, 200)) // small delay between requests
       
-      const areasRes = await safeFetch("http://127.0.0.1:8000/api/areas")
+      const areasRes = await safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/areas`)
       await new Promise(r => setTimeout(r, 200)) // small delay between requests
       
-      const regionsRes = await safeFetch("http://127.0.0.1:8000/api/regions")
+      const regionsRes = await safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/regions`)
       await new Promise(r => setTimeout(r, 200)) // small delay between requests
       
-      const salesTypesRes = await safeFetch("http://127.0.0.1:8000/api/sales-types")
+      const salesTypesRes = await safeFetch(`${process.env.NEXT_PUBLIC_API_URL}/sales-types`)
       
       // Extract data from Laravel API response format
       const reportsData = reportsRes?.data || reportsRes || [];

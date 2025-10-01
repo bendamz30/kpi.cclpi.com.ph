@@ -46,7 +46,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
   useEffect(() => {
     const fetchRegionalUsers = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/users")
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`)
         if (response.ok) {
           const usersResponse = await response.json()
           const users = usersResponse?.data || usersResponse || []
@@ -80,7 +80,7 @@ export function AddSalesReportForm({ onSuccess, onCancel }: AddSalesReportFormPr
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/sales", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

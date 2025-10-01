@@ -96,7 +96,7 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}`)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`)
       if (response.ok) {
         const result = await response.json()
         const userData = result.data
@@ -130,21 +130,21 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
 
   const fetchDropdownData = async () => {
     try {
-      const areasResponse = await fetch("http://127.0.0.1:8000/api/areas")
+      const areasResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/areas`)
       if (areasResponse.ok) {
         const areasResponseData = await areasResponse.json()
         const areasData = areasResponseData?.data || areasResponseData || []
         setAreas(areasData)
       }
 
-      const regionsResponse = await fetch("http://127.0.0.1:8000/api/regions")
+      const regionsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/regions`)
       if (regionsResponse.ok) {
         const regionsResponseData = await regionsResponse.json()
         const regionsData = regionsResponseData?.data || regionsResponseData || []
         setRegions(regionsData)
       }
 
-      const salesTypesResponse = await fetch("http://127.0.0.1:8000/api/sales-types")
+      const salesTypesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales-types`)
       if (salesTypesResponse.ok) {
         const salesTypesResponseData = await salesTypesResponse.json()
         const salesTypesData = salesTypesResponseData?.data || salesTypesResponseData || []
@@ -193,7 +193,7 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
         // Add _method field for Laravel to recognize this as a PUT request
         formDataToSend.append('_method', 'PUT')
         
-        response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`, {
           method: "POST",
           body: formDataToSend,
         })
@@ -221,7 +221,7 @@ export function EditUserForm({ user, onSuccess, onCancel }: EditUserFormProps) {
           if (formData.agencyCoopTarget) requestData.agencyCoopTarget = formData.agencyCoopTarget
         }
 
-        response = await fetch(`http://127.0.0.1:8000/api/users/${user.userId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`, {
           method: "PUT",
           headers: {
             'Content-Type': 'application/json',

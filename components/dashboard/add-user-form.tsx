@@ -78,19 +78,19 @@ export function AddUserForm({ onSuccess, onCancel }: AddUserFormProps) {
 
   const fetchDropdownData = async () => {
     try {
-      const areasResponse = await fetch("http://127.0.0.1:8000/api/areas")
+      const areasResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/areas`)
       if (areasResponse.ok) {
         const areasResponseData = await areasResponse.json()
         setAreas(areasResponseData.data || [])
       }
 
-      const regionsResponse = await fetch("http://127.0.0.1:8000/api/regions")
+      const regionsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/regions`)
       if (regionsResponse.ok) {
         const regionsResponseData = await regionsResponse.json()
         setRegions(regionsResponseData.data || [])
       }
 
-      const salesTypesResponse = await fetch("http://127.0.0.1:8000/api/sales-types")
+      const salesTypesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales-types`)
       if (salesTypesResponse.ok) {
         const salesTypesResponseData = await salesTypesResponse.json()
         setSalesTypes(salesTypesResponseData.data || [])
@@ -126,7 +126,7 @@ export function AddUserForm({ onSuccess, onCancel }: AddUserFormProps) {
       if (formData.policySoldTarget) formDataToSend.append('policySoldTarget', formData.policySoldTarget)
       if (formData.agencyCoopTarget) formDataToSend.append('agencyCoopTarget', formData.agencyCoopTarget)
 
-      const response = await fetch("http://127.0.0.1:8000/api/users", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         method: "POST",
         body: formDataToSend,
       })
