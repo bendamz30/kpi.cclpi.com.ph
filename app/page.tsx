@@ -264,7 +264,14 @@ function DashboardContent() {
         params.append('salesRepId', activeFilters.salesRepId)
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/kpi-targets?${params.toString()}`)
+      // Construct API URL with fallback and validation
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://kpiapi.cclpi.com.ph/api'
+      const apiUrl = `${apiBaseUrl}/kpi-targets?${params.toString()}`
+      
+      console.log('[DEBUG] API URL:', apiUrl)
+      console.log('[DEBUG] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
+      
+      const response = await fetch(apiUrl)
       const data = await response.json()
       
       if (data.success && data.data) {

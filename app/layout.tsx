@@ -2,7 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
-import { Analytics } from "@vercel/analytics/next"
+// Removed Vercel Analytics - not needed for cPanel deployment
+// import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { RealTimeProvider } from "@/components/providers/real-time-provider"
 import "./globals.css"
@@ -34,7 +35,7 @@ export default function RootLayout({
         <RealTimeProvider>
           <Suspense fallback={null}>{children}</Suspense>
         </RealTimeProvider>
-        <Analytics />
+        {/* Removed Analytics component - not deploying to Vercel */}
       </body>
     </html>
   )
